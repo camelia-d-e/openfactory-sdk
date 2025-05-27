@@ -1,0 +1,21 @@
+{
+  "name": "OpenFactory-SDK Dev Container",
+  "image": "mcr.microsoft.com/devcontainers/python:3.10",
+  "features": {
+    "docker-in-docker": {
+      "version": "latest"
+    },
+    "./features/infra": {}
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}
