@@ -1,0 +1,10 @@
+devices:
+  my-device:
+    uuid: IVAC
+
+    agent:
+      port: 5000
+      device_xml: ivac.xml
+      adapter:
+        ip: 132.203.120.89
+        port: 7878

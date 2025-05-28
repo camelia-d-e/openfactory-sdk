@@ -1,0 +1,15 @@
+<MTConnectDevices>
+  <Devices>
+    <Device uuid="IVAC" id="ivac" name="iVAC-System">
+
+      <!-- General information -->
+      <Description>
+         Device for iVAC system.
+      </Description>
+      <DataItems>
+        <DataItem category="EVENT" id="avail" name="avail" type="AVAILABILITY"/>
+        <DataItem category="EVENT" id="A1ToolPlus" type="EQUIMENT.MODE_POWERED"/>
+      </DataItems>
+    </Device>
+  </Devices>
+</MTConnectDevices>
