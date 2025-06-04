@@ -8,3 +8,16 @@ devices:
       adapter:
         ip: 132.203.120.89
         port: 7878
+
+    supervisor:
+      image: ghcr.io/demo-smart-factory-concordia-university/opcua-supervisor
+      adapter:
+        ip: 132.203.120.89
+        port: 4840
+        environment:
+          - NAMESPACE_URI=demofactory
+          - BROWSE_NAME=IVAC
+          - KSQLDB_URL=http://ksqldb-server:8088
+   
+
+
