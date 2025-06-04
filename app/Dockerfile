@@ -36,10 +36,10 @@ ENV APPLICATION_VERSION=${VERSION}
 ENV APPLICATION_MANUFACTURER=${APPLICATION_MANUFACTURER}
 
 WORKDIR /ofa
-COPY spindle_monitoring.py /ofa
+COPY tool_monitoring.py /ofa
 RUN chown -R appuser:appuser /ofa
 
 # Switches to non-root user
 USER ${UNAME}
 
-CMD ["python3", "-u", "/ofa/spindle_monitoring.py"]
+CMD ["python3", "-u", "/ofa/tool_monitoring.py"]
