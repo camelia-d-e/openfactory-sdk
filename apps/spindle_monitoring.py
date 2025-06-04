@@ -16,7 +16,7 @@ class SpindleMonitoring(OpenFactoryApp):
         try:
             ivac = Asset('IVAC', ksqlClient=self.ksqlClient)
             
-            ivac.subscribe_to_events(on_event, 'ivac_samples_group')
+            ivac.subscribe_to_events(on_event, 'ivac_events_group')
             
             self.logger.info("Successfully connected to services and subscribed to events")
             
