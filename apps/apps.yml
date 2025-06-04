@@ -1,0 +1,4 @@
+apps:
+  spindle_monitoring::
+    uuid: SPINDLE-MONITORING
+    image: spindle-monitoring
