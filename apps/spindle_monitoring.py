@@ -13,7 +13,6 @@ class SpindleMonitoring(OpenFactoryApp):
         self.ksqlClient = ksqlClient
 
     def main_loop(self):
-        print("HELuLO?????!!!!")
         try:
             ivac = Asset('IVAC', ksqlClient=self.ksqlClient)
             
