@@ -95,11 +95,11 @@ class ToolMonitoring(OpenFactoryApp):
             msg_value (dict): The message payload containing sample data.
                               Expected keys: 'id' (str), 'value' (float or str).
         """
-        if not (self.tool_states.get(msg_value['id'], 0)): 
-            self.tool_states[msg_value['id']] = msg_value['value']
-        else:
-            self.tool_states[msg_value['id']] = msg_value['value']
-
+        if(msg_value['id'] == 'A1ToolPlus'):
+             self.tool_states['A1ToolPlus'] = msg_value['value']
+        elif(msg_value['id'] == 'A2ToolPlus'):
+            self.tool_states['A2ToolPlus'] = msg_value['value']
+            
         self.verify_tool_states()
         
         self.write_event_to_csv(msg_key, msg_value)
@@ -122,11 +122,11 @@ class ToolMonitoring(OpenFactoryApp):
         print(f"Current tool states: {self.tool_states.values()}")
 
         if any(state == 'OFF' for state in self.tool_states.values()):
-            self.ivac.__setattr__('ivac_condition', 'OK') 
+            self.ivac.__setattr__('ivac_condition', 'NORMAL') 
         elif any(state == 'UNAVAILABLE' for state in self.tool_states.values()):
             self.ivac.__setattr__("ivac_condition", 'UNAVAILABLE') 
         else:
-            self.ivac.__setattr__("ivac_condition", 'ERROR') 
+            self.ivac.__setattr__("ivac_condition", 'FAULT') 
 
         time.sleep(0.5)  # Ensure the ivac_condition is set before sending
         self.method("BuzzerControl", self.ivac.__getattr__('ivac_condition').value)
