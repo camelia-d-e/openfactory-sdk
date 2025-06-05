@@ -21,6 +21,7 @@ class ToolMonitoring(OpenFactoryApp):
 
 
     IVAC_SYSTEM_UUID: str = os.getenv('IVAC_SYSTEM_UUID', 'IVAC')
+    SIMULATION_MODE: bool = os.getenv('SIMULATION_MODE', False)
 
     def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel= 'INFO'):
         """
@@ -50,6 +51,8 @@ class ToolMonitoring(OpenFactoryApp):
                                 AssetAttribute('UNAVAILABLE',
                                                type='Condition',
                                                tag='SYSTEM'))
+        
+        self.method('SimulationMode', self.SIMULATION_MODE)
         
         self.tool_states['A1ToolPlus'] = self.ivac.A1ToolPlus.value
         self.tool_states['A2ToolPlus'] = self.ivac.A2ToolPlus.value
