@@ -56,6 +56,9 @@ class ToolMonitoring(OpenFactoryApp):
 
         print(f"Tool states initialized: {self.tool_states}")
 
+        ## Initialize buzzer state
+        self.verify_tool_states()
+
         self.ivac.subscribe_to_events(self.on_event, 'ivac_events_group')
 
 
@@ -85,7 +88,7 @@ class ToolMonitoring(OpenFactoryApp):
         - If any tool is in 'UNAVAILABLE' state, sets ivac_condition to 'UNAVAILABLE'.
         - Else, sets ivac_condition to 'OK'.
 
-        Writes the event data to a CSV file named 'ivac_events.csv'.
+        Writes the event data to a CSV file.
 
         Args:
             msg_key (str): The key of the Kafka message (the sensor ID).
@@ -111,23 +114,23 @@ class ToolMonitoring(OpenFactoryApp):
         - If any tool is in 'UNAVAILABLE' state, sets ivac_condition to 'UNAVAILABLE'.
         - Else, sets ivac_condition to 'OK'.
 
+        Sends the updated ivac_condition to the CMDS_STREAM to control the buzzer.
+
         Args:
             tool_states (dict): A dictionary containing tool states with tool IDs as keys.
         """
+        print(f"Current tool states: {self.tool_states.values()}")
 
-        if all(state == 'ON' or state == 'AVAILABLE' for state in self.tool_states.values()) and len(self.tool_states.keys()) > 1:
-            self.ivac.ivac_condition = 'ERROR'
-            
-            print(f"IVAC Condition: {self.ivac.ivac_condition}")
+        if any(state == 'OFF' for state in self.tool_states.values()):
+            self.ivac.__setattr__('ivac_condition', 'OK') 
         elif any(state == 'UNAVAILABLE' for state in self.tool_states.values()):
-            self.ivac.ivac_condition = 'UNAVAILABLE'
-            print(f"IVAC Condition: {self.ivac.ivac_condition}")
+            self.ivac.__setattr__("ivac_condition", 'UNAVAILABLE') 
         else:
-            self.ivac.ivac_condition = 'OK'
-            print(f"IVAC Condition: {self.ivac.ivac_condition}")
-        
-        self.method("BuzzerControl", self.ivac.ivac_condition.value)
-        print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.ivac_condition.value}')
+            self.ivac.__setattr__("ivac_condition", 'ERROR') 
+
+        time.sleep(0.5)  # Ensure the ivac_condition is set before sending
+        self.method("BuzzerControl", self.ivac.__getattr__('ivac_condition').value)
+        print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__('ivac_condition').value}')
 
     def write_event_to_csv(self, msg_key: str, msg_value: dict) -> None:
         """
