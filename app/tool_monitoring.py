@@ -34,6 +34,7 @@ class ToolMonitoring(OpenFactoryApp):
         """
         super().__init__(app_uuid, ksqlClient, bootstrap_servers, loglevel)
         self.tool_states = {}
+        self.asset_uuid = "IVAC"
 
         self.add_attribute('ivac_system', AssetAttribute(
             self.IVAC_SYSTEM_UUID,
@@ -50,7 +51,13 @@ class ToolMonitoring(OpenFactoryApp):
                                                type='Condition',
                                                tag='SYSTEM'))
         
+        self.tool_states['A1ToolPlus'] = self.ivac.A1ToolPlus.value
+        self.tool_states['A2ToolPlus'] = self.ivac.A2ToolPlus.value
+
+        print(f"Tool states initialized: {self.tool_states}")
+
         self.ivac.subscribe_to_events(self.on_event, 'ivac_events_group')
+
 
     def app_event_loop_stopped(self) -> None:
         """
@@ -85,7 +92,9 @@ class ToolMonitoring(OpenFactoryApp):
             msg_value (dict): The message payload containing sample data.
                               Expected keys: 'id' (str), 'value' (float or str).
         """
-        if self.tool_states.get(msg_value['id'], 0) == 0:
+        if not (self.tool_states.get(msg_value['id'], 0)): 
+            self.tool_states[msg_value['id']] = msg_value['value']
+        else:
             self.tool_states[msg_value['id']] = msg_value['value']
 
         self.verify_tool_states()
@@ -105,12 +114,20 @@ class ToolMonitoring(OpenFactoryApp):
         Args:
             tool_states (dict): A dictionary containing tool states with tool IDs as keys.
         """
-        if all(state == 'ON' for state in self.tool_states.values()) and len(self.tool_states) > 1:
+
+        if all(state == 'ON' or state == 'AVAILABLE' for state in self.tool_states.values()) and len(self.tool_states.keys()) > 1:
             self.ivac.ivac_condition = 'ERROR'
+            
+            print(f"IVAC Condition: {self.ivac.ivac_condition}")
         elif any(state == 'UNAVAILABLE' for state in self.tool_states.values()):
             self.ivac.ivac_condition = 'UNAVAILABLE'
+            print(f"IVAC Condition: {self.ivac.ivac_condition}")
         else:
             self.ivac.ivac_condition = 'OK'
+            print(f"IVAC Condition: {self.ivac.ivac_condition}")
+        
+        self.method("BuzzerControl", self.ivac.ivac_condition.value)
+        print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.ivac_condition.value}')
 
     def write_event_to_csv(self, msg_key: str, msg_value: dict) -> None:
         """
@@ -124,7 +141,7 @@ class ToolMonitoring(OpenFactoryApp):
             msg_value (dict): The message payload containing sample data.
                               Expected keys: 'id' (str), 'value' (float or str).
         """
-        with open('ivac_events.csv', 'a', newline='') as csvfile:
+        with open(f'{msg_key}_events.csv', 'a', newline='') as csvfile:
             fieldnames = list(msg_value.keys())
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
