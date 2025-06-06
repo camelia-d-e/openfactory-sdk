@@ -107,8 +107,6 @@ class ToolMonitoring(OpenFactoryApp):
         self.verify_tool_states()
         
         self.write_message_to_csv(msg_key, msg_value)
-        self.method('SimulationMode', self.SIMULATION_MODE)
-        print(f'Sent to CMD_STREAM: SimulationMode with value {self.SIMULATION_MODE}')
 
     def verify_tool_states(self) -> None:
         """
