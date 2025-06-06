@@ -21,7 +21,7 @@ class ToolMonitoring(OpenFactoryApp):
 
 
     IVAC_SYSTEM_UUID: str = os.getenv('IVAC_SYSTEM_UUID', 'IVAC')
-    SIMULATION_MODE: str = os.getenv('SIMULATION_MODE', 'false')
+    SIMULATION_MODE: str = os.getenv('SIMULATION_MODE', 'true')
 
     def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel= 'INFO'):
         """
@@ -57,14 +57,90 @@ class ToolMonitoring(OpenFactoryApp):
 
         print(f"Tool states initialized: {self.tool_states}")
 
+        self.setup_power_monitoring_streams(ksqlClient)
+
+        self.method('SimulationMode', self.SIMULATION_MODE)
+        print(f'Sent to CMD_STREAM: SimulationMode with value {self.SIMULATION_MODE}')
+
         ## Initialize buzzer state
         self.verify_tool_states()
 
         self.ivac.subscribe_to_events(self.on_event, 'ivac_events_group')
 
-        self.method('SimulationMode', self.SIMULATION_MODE)
-        print(f'Sent to CMD_STREAM: SimulationMode with value {self.SIMULATION_MODE}')
+        
+    def setup_power_monitoring_streams(self, ksqlClient: KSQLDBClient) -> None:
+        """
+        Setup KSQL streams for monitoring power events and durations.
+        Creates the necessary streams and tables for power state monitoring.
+        """
+        try:
+            # Create the power events stream
+            power_events_query = """
+            CREATE STREAM IF NOT EXISTS ivac_power_events WITH (KAFKA_TOPIC='power_events', PARTITIONS=1) AS
+            SELECT
+              'A1ToolPlus' AS key,
+              asset_uuid,
+              value,
+              ROWTIME AS ts
+            FROM ASSETS_STREAM
+            WHERE asset_uuid = 'VIRTUAL-IVAC-TOOL-PLUS' AND id = 'A1ToolPlus'
+            EMIT CHANGES;
+            """
+            
+            # Create the latest state table
+            latest_state_query = """
+            CREATE TABLE IF NOT EXISTS latest_ivac_power_state AS
+            SELECT
+              key,
+              LATEST_BY_OFFSET(value) AS last_value,
+              LATEST_BY_OFFSET(ts) AS last_ts
+            FROM ivac_power_events
+            GROUP BY key;
+            """
+            
+            # Create the power durations stream
+            durations_query = """
+            CREATE STREAM IF NOT EXISTS ivac_power_durations AS
+            SELECT
+              ivac_event.key,
+              s.last_value AS state_just_ended,
+              (ivac_event.ts - s.last_ts) / 1000 AS duration_sec
+            FROM ivac_power_events ivac_event
+            JOIN latest_ivac_power_state s
+              ON ivac_event.key = s.key
+            WHERE ivac_event.value IS DISTINCT FROM s.last_value
+            EMIT CHANGES;
+            """
+            
+            # Create the totals table
+            totals_query = """
+            CREATE TABLE IF NOT EXISTS ivac_power_state_totals AS
+            SELECT
+              CONCAT(IVAC_EVENT_KEY, '_', STATE_JUST_ENDED) AS ivac_power_key,
+              SUM(DURATION_SEC) AS total_duration_sec,
+              COUNT(*) AS state_change_count
+            FROM ivac_power_durations
+            GROUP BY CONCAT(IVAC_EVENT_KEY, '_', STATE_JUST_ENDED)
+            EMIT CHANGES;
+            """
 
+            # Execute the queries
+            queries = [
+                ("Power Events Stream", power_events_query),
+                ("Latest State Table", latest_state_query),
+                ("Power Durations Stream", durations_query),
+                ("Power Totals Table", totals_query)
+            ]
+
+            for name, query in queries:
+                try:
+                    response = ksqlClient.statement_query(query)
+                    print(f"Created {name}: {response}")
+                except Exception as e:
+                    print(f"Error creating {name}: {e}")
+                
+        except Exception as e:
+            print(f"KSQL setup error: {e}")
 
     def app_event_loop_stopped(self) -> None:
         """
@@ -79,6 +155,7 @@ class ToolMonitoring(OpenFactoryApp):
     def main_loop(self) -> None:
         """ Main loop of the App. """
         while True:
+            self.monitor_power_state_duration()
             time.sleep(1)
 
     
@@ -166,6 +243,12 @@ class ToolMonitoring(OpenFactoryApp):
                 writer.writeheader()
 
             writer.writerow(msg_value)
+
+    def monitor_power_state_duration(self) -> None:
+        """
+        Monitors the power state duration of the tools.
+        """
+       
 
 
 app = ToolMonitoring(
