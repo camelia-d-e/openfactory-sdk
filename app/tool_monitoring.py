@@ -21,7 +21,7 @@ class ToolMonitoring(OpenFactoryApp):
 
 
     IVAC_SYSTEM_UUID: str = os.getenv('IVAC_SYSTEM_UUID', 'IVAC')
-    SIMULATION_MODE: bool = os.getenv('SIMULATION_MODE', False)
+    SIMULATION_MODE: str = os.getenv('SIMULATION_MODE', 'false')
 
     def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel= 'INFO'):
         """
@@ -47,12 +47,10 @@ class ToolMonitoring(OpenFactoryApp):
                           ksqlClient=ksqlClient,
                           bootstrap_servers=bootstrap_servers)
 
-        self.ivac.add_attribute('ivac_condition',
+        self.ivac.add_attribute('ivac_tools_status',
                                 AssetAttribute('UNAVAILABLE',
                                                type='Condition',
-                                               tag='SYSTEM'))
-        
-        self.method('SimulationMode', self.SIMULATION_MODE)
+                                               tag='UNAVAILABLE'))
         
         self.tool_states['A1ToolPlus'] = self.ivac.A1ToolPlus.value
         self.tool_states['A2ToolPlus'] = self.ivac.A2ToolPlus.value
@@ -63,6 +61,9 @@ class ToolMonitoring(OpenFactoryApp):
         self.verify_tool_states()
 
         self.ivac.subscribe_to_events(self.on_event, 'ivac_events_group')
+
+        self.method('SimulationMode', self.SIMULATION_MODE)
+        print(f'Sent to CMD_STREAM: SimulationMode with value {self.SIMULATION_MODE}')
 
 
     def app_event_loop_stopped(self) -> None:
@@ -105,7 +106,9 @@ class ToolMonitoring(OpenFactoryApp):
             
         self.verify_tool_states()
         
-        self.write_event_to_csv(msg_key, msg_value)
+        self.write_message_to_csv(msg_key, msg_value)
+        self.method('SimulationMode', self.SIMULATION_MODE)
+        print(f'Sent to CMD_STREAM: SimulationMode with value {self.SIMULATION_MODE}')
 
     def verify_tool_states(self) -> None:
         """
@@ -125,19 +128,28 @@ class ToolMonitoring(OpenFactoryApp):
         print(f"Current tool states: {self.tool_states.values()}")
 
         if any(state == 'OFF' for state in self.tool_states.values()):
-            self.ivac.__setattr__('ivac_condition', 'NORMAL') 
+            self.ivac.add_attribute('ivac_tools_status',
+                                AssetAttribute('NORMAL',
+                                               type='Condition',
+                                               tag='At least one tool is OFF')) 
         elif any(state == 'UNAVAILABLE' for state in self.tool_states.values()):
-            self.ivac.__setattr__("ivac_condition", 'UNAVAILABLE') 
+            self.ivac.add_attribute('ivac_tools_status',
+                                AssetAttribute('UNAVAILABLE',
+                                               type='Condition',
+                                               tag='At least one tool is UNAVAILABLE')) 
         else:
-            self.ivac.__setattr__("ivac_condition", 'FAULT') 
+            self.ivac.add_attribute('ivac_tools_status',
+                                AssetAttribute('FAULT',
+                                               type='Condition',
+                                               tag='Every tool is ON')) 
 
-        time.sleep(0.5)  # Ensure the ivac_condition is set before sending
-        self.method("BuzzerControl", self.ivac.__getattr__('ivac_condition').value)
-        print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__('ivac_condition').value}')
+        time.sleep(0.5)  # Ensure that ivac_tools_status is set before sending
+        self.method("BuzzerControl", self.ivac.__getattr__('ivac_tools_status').value)
+        print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__('ivac_tools_status').value}')
 
-    def write_event_to_csv(self, msg_key: str, msg_value: dict) -> None:
+    def write_message_to_csv(self, msg_key: str, msg_value: dict) -> None:
         """
-        Writes the event data to a CSV file named 'ivac_events.csv'.
+        Writes the relevant message data to a CSV file named '${DEVICE_UUID}_msgs.csv'.
 
         This method appends the event data to the CSV file, creating the file
         if it does not exist. It ensures that the header is written only once.
@@ -147,7 +159,7 @@ class ToolMonitoring(OpenFactoryApp):
             msg_value (dict): The message payload containing sample data.
                               Expected keys: 'id' (str), 'value' (float or str).
         """
-        with open(f'{msg_key}_events.csv', 'a', newline='') as csvfile:
+        with open(f'{msg_key}_msgs.csv', 'a', newline='') as csvfile:
             fieldnames = list(msg_value.keys())
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
