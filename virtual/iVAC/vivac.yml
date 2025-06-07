@@ -1,0 +1,12 @@
+# Virtual iVAC Tool Plus
+
+devices:
+
+  vivac:
+    uuid: VIRTUAL-IVAC-TOOL-PLUS
+    agent:
+      port: 2002
+      device_xml: device.xml
+      adapter:
+        ip: virtual-ivac-tool-plus-adapter
+        port: 7878

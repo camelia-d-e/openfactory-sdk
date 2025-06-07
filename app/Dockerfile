@@ -1,7 +1,7 @@
 # Docker instructions to build image of the demo_ofa_app
 #
 # build image with:
-#    docker build -t demo_ofa_app .
+#    docker build -t ivac-tool-monitoring-app .
 
 FROM python:3.13-slim-bullseye
 
