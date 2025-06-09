@@ -9,7 +9,7 @@ from openfactory.assets import Asset, AssetAttribute
 
 class ToolMonitoring(OpenFactoryApp):
     """
-    SpindleMonitoring application for monitoring the state of tools in an IVAC system.
+    ToolMonitoring application for monitoring the state of tools in an IVAC system.
     Inherits from `OpenFactoryApp` and extends it to represent a specific application
     that monitors the state of tools in an IVAC system, updating their conditions based on events.
     Class Attributes:
@@ -25,7 +25,7 @@ class ToolMonitoring(OpenFactoryApp):
 
     def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel= 'INFO'):
         """
-        Initializes the SpindleMonitoring application.
+        Initializes the ToolMonitoring application.
         Sets up the application with the provided UUID, KSQLDB client, and Kafka bootstrap servers.
         Args:
             app_uuid (str): Unique identifier for the application.
@@ -155,7 +155,6 @@ class ToolMonitoring(OpenFactoryApp):
     def main_loop(self) -> None:
         """ Main loop of the App. """
         while True:
-            self.monitor_power_state_duration()
             time.sleep(1)
 
     
@@ -243,16 +242,11 @@ class ToolMonitoring(OpenFactoryApp):
                 writer.writeheader()
 
             writer.writerow(msg_value)
-
-    def monitor_power_state_duration(self) -> None:
-        """
-        Monitors the power state duration of the tools.
-        """
        
 
 
 app = ToolMonitoring(
-    app_uuid='SPINDLE-MONITORING',
+    app_uuid='TOOL-MONITORING',
     ksqlClient=KSQLDBClient("http://ksqldb-server:8088"),
     bootstrap_servers="broker:29092"
 )
