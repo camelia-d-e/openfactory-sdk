@@ -8,8 +8,8 @@
       </Description>
       <DataItems>
         <DataItem category="EVENT" id="avail" name="avail" type="AVAILABILITY"/>
-        <DataItem category="EVENT" id="A1ToolPlus" type="EQUIMENTMODE.POWERED"/>
-        <DataItem category="EVENT" id="A2ToolPlus" type="EQUIMENTMODE.POWERED"/>
+        <DataItem category="EVENT" id="A1ToolPlus" type="EQUIMENT_MODE" subtype="POWERED"/>
+        <DataItem category="EVENT" id="A2ToolPlus" type="EQUIMENT_MODE" subtype="POWERED"/>
         <DataItem category="EVENT" id="SimulationMode" type="EXECUTION"/>
         <DataItem category="CONDITION" id="Buzzer" type="SYSTEM"/>
       </DataItems>
