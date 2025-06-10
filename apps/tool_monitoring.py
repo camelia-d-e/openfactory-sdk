@@ -21,7 +21,7 @@ class ToolMonitoring(OpenFactoryApp):
 
 
     IVAC_SYSTEM_UUID: str = os.getenv('IVAC_SYSTEM_UUID', 'IVAC')
-    SIMULATION_MODE: str = os.getenv('SIMULATION_MODE', 'true')
+    SIMULATION_MODE: str = os.getenv('SIMULATION_MODE', 'false')
 
     def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel= 'INFO'):
         """
@@ -74,6 +74,14 @@ class ToolMonitoring(OpenFactoryApp):
         Creates the necessary streams and tables for power state monitoring.
         """
         try:
+            #First, cleanup any existing streams and tables
+            ksqlClient.statement_query("DROP TABLE IF EXISTS ivac_power_state_totals;")
+            ksqlClient.statement_query("DROP STREAM IF EXISTS ivac_power_durations;")
+            ksqlClient.statement_query("DROP TABLE IF EXISTS latest_ivac_power_state;")
+            ksqlClient.statement_query("DROP STREAM IF EXISTS ivac_power_events;")
+            
+            print("Cleaned up existing streams and tables for power monitoring.")
+
             # Create the power events stream
             power_events_query = """
             CREATE STREAM IF NOT EXISTS ivac_power_events WITH (KAFKA_TOPIC='power_events', PARTITIONS=1) AS
@@ -83,7 +91,7 @@ class ToolMonitoring(OpenFactoryApp):
               value,
               ROWTIME AS ts
             FROM ASSETS_STREAM
-            WHERE asset_uuid = 'VIRTUAL-IVAC-TOOL-PLUS' AND id = 'A1ToolPlus'
+            WHERE asset_uuid = 'IVAC' AND id = 'A1ToolPlus'
             EMIT CHANGES;
             """
             
