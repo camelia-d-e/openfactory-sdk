@@ -86,12 +86,12 @@ class ToolMonitoring(OpenFactoryApp):
             power_events_query = """
             CREATE STREAM IF NOT EXISTS ivac_power_events WITH (KAFKA_TOPIC='power_events', PARTITIONS=1) AS
             SELECT
-              'A1ToolPlus' AS key,
+              id AS key,
               asset_uuid,
               value,
               ROWTIME AS ts
             FROM ASSETS_STREAM
-            WHERE asset_uuid = 'IVAC' AND id = 'A1ToolPlus'
+            WHERE asset_uuid = 'IVAC' AND id IN ('A1ToolPlus', 'A2ToolPlus')
             EMIT CHANGES;
             """
             
