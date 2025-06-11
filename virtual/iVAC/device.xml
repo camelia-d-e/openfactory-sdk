@@ -1,16 +1,17 @@
 <MTConnectDevices>
   <Devices>
-    <Device uuid="IVAC" id="ivac" name="iVAC-System">
+    <Device uuid="IVAC" id="ivac" name="iVAC Tool Plus">
 
       <!-- General information -->
       <Description>
-         Device for iVAC system.
+         iVAC Tool Plus - Dust collector auto sensor that detects when a power tool is turned on
       </Description>
+
+      <!-- Data Items -->
       <DataItems>
         <DataItem category="EVENT" id="avail" name="avail" type="AVAILABILITY"/>
         <DataItem category="EVENT" id="A1ToolPlus" type="EQUIPMENT_MODE" subType="POWERED"/>
         <DataItem category="EVENT" id="A2ToolPlus" type="EQUIPMENT_MODE" subType="POWERED"/>
-        <DataItem category="EVENT" id="SimulationMode" type="EXECUTION"/>
         <DataItem category="CONDITION" id="ivac_tools_status" type="SYSTEM"/>
         <DataItem category="CONDITION" id="Buzzer" type="SYSTEM"/>
       </DataItems>

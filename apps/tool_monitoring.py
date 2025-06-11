@@ -211,19 +211,19 @@ class ToolMonitoring(OpenFactoryApp):
 
         if any(state == 'OFF' for state in self.tool_states.values()):
             self.ivac.add_attribute('ivac_tools_status',
-                                AssetAttribute('NORMAL',
-                                               type='Condition',
-                                               tag='At least one tool is OFF')) 
+                                    AssetAttribute('No more than one connected tool is powered ON',
+                                                   type='Condition',
+                                                   tag='Normal')) 
         elif any(state == 'UNAVAILABLE' for state in self.tool_states.values()):
             self.ivac.add_attribute('ivac_tools_status',
-                                AssetAttribute('UNAVAILABLE',
-                                               type='Condition',
-                                               tag='At least one tool is UNAVAILABLE')) 
+                                    AssetAttribute('At least one tool is UNAVAILABLE',
+                                                   type='Condition',
+                                                   tag='Warning')) 
         else:
             self.ivac.add_attribute('ivac_tools_status',
-                                AssetAttribute('FAULT',
-                                               type='Condition',
-                                               tag='Every tool is ON')) 
+                                    AssetAttribute('More than one connected tool is powered ON.',
+                                                   type='Condition',
+                                                   tag='Fault')) 
 
         time.sleep(0.5)  # Ensure that ivac_tools_status is set before sending
         self.method("BuzzerControl", self.ivac.__getattr__('ivac_tools_status').value)
