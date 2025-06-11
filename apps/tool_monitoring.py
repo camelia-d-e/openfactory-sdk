@@ -9,7 +9,7 @@ from openfactory.assets import Asset, AssetAttribute
 
 class ToolMonitoring(OpenFactoryApp):
     """
-    SpindleMonitoring application for monitoring the state of tools in an IVAC system.
+    ToolMonitoring application for monitoring the state of tools in an IVAC system.
     Inherits from `OpenFactoryApp` and extends it to represent a specific application
     that monitors the state of tools in an IVAC system, updating their conditions based on events.
     Class Attributes:
@@ -21,11 +21,11 @@ class ToolMonitoring(OpenFactoryApp):
 
 
     IVAC_SYSTEM_UUID: str = os.getenv('IVAC_SYSTEM_UUID', 'IVAC')
-    SIMULATION_MODE: str = os.getenv('SIMULATION_MODE', 'true')
+    SIMULATION_MODE: str = os.getenv('SIMULATION_MODE', 'false')
 
     def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel= 'INFO'):
         """
-        Initializes the SpindleMonitoring application.
+        Initializes the ToolMonitoring application.
         Sets up the application with the provided UUID, KSQLDB client, and Kafka bootstrap servers.
         Args:
             app_uuid (str): Unique identifier for the application.
@@ -74,16 +74,24 @@ class ToolMonitoring(OpenFactoryApp):
         Creates the necessary streams and tables for power state monitoring.
         """
         try:
+            #First, cleanup any existing streams and tables
+            ksqlClient.statement_query("DROP TABLE IF EXISTS ivac_power_state_totals;")
+            ksqlClient.statement_query("DROP STREAM IF EXISTS ivac_power_durations;")
+            ksqlClient.statement_query("DROP TABLE IF EXISTS latest_ivac_power_state;")
+            ksqlClient.statement_query("DROP STREAM IF EXISTS ivac_power_events;")
+            
+            print("Cleaned up existing streams and tables for power monitoring.")
+
             # Create the power events stream
             power_events_query = """
             CREATE STREAM IF NOT EXISTS ivac_power_events WITH (KAFKA_TOPIC='power_events', PARTITIONS=1) AS
             SELECT
-              'A1ToolPlus' AS key,
+              id AS key,
               asset_uuid,
               value,
               ROWTIME AS ts
             FROM ASSETS_STREAM
-            WHERE asset_uuid = 'VIRTUAL-IVAC-TOOL-PLUS' AND id = 'A1ToolPlus'
+            WHERE asset_uuid = 'IVAC' AND id IN ('A1ToolPlus', 'A2ToolPlus')
             EMIT CHANGES;
             """
             
@@ -155,7 +163,6 @@ class ToolMonitoring(OpenFactoryApp):
     def main_loop(self) -> None:
         """ Main loop of the App. """
         while True:
-            self.monitor_power_state_duration()
             time.sleep(1)
 
     
@@ -243,17 +250,11 @@ class ToolMonitoring(OpenFactoryApp):
                 writer.writeheader()
 
             writer.writerow(msg_value)
-
-    def monitor_power_state_duration(self) -> None:
-        """
-        Monitors the power state duration of the tools.
-        """
-        pass
        
 
 
 app = ToolMonitoring(
-    app_uuid='SPINDLE-MONITORING',
+    app_uuid='TOOL-MONITORING',
     ksqlClient=KSQLDBClient("http://ksqldb-server:8088"),
     bootstrap_servers="broker:29092"
 )
