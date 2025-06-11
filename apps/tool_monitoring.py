@@ -213,20 +213,20 @@ class ToolMonitoring(OpenFactoryApp):
             self.ivac.add_attribute('ivac_tools_status',
                                     AssetAttribute('No more than one connected tool is powered ON',
                                                    type='Condition',
-                                                   tag='Normal')) 
+                                                   tag='NORMAL')) 
         elif any(state == 'UNAVAILABLE' for state in self.tool_states.values()):
             self.ivac.add_attribute('ivac_tools_status',
                                     AssetAttribute('At least one tool is UNAVAILABLE',
                                                    type='Condition',
-                                                   tag='Warning')) 
+                                                   tag='WARNING')) 
         else:
             self.ivac.add_attribute('ivac_tools_status',
                                     AssetAttribute('More than one connected tool is powered ON.',
                                                    type='Condition',
-                                                   tag='Fault')) 
+                                                   tag='FAULT')) 
 
         time.sleep(0.5)  # Ensure that ivac_tools_status is set before sending
-        self.method("BuzzerControl", self.ivac.__getattr__('ivac_tools_status').value)
+        self.method("BuzzerControl", self.ivac.__getattr__('ivac_tools_status').tag)
         print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__('ivac_tools_status').value}')
 
     def write_message_to_csv(self, msg_key: str, msg_value: dict) -> None:
