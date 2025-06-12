@@ -208,17 +208,17 @@ class ToolMonitoring(OpenFactoryApp):
             tool_states (dict): A dictionary containing tool states with tool IDs as keys.
         """
         print(f"Current tool states: {self.tool_states.values()}")
-
-        if any(state == 'OFF' for state in self.tool_states.values()):
-            self.ivac.add_attribute('ivac_tools_status',
-                                    AssetAttribute('No more than one connected tool is powered ON',
-                                                   type='Condition',
-                                                   tag='NORMAL')) 
-        elif any(state == 'UNAVAILABLE' for state in self.tool_states.values()):
+        
+        if any(state == 'UNAVAILABLE' for state in self.tool_states.values()):
             self.ivac.add_attribute('ivac_tools_status',
                                     AssetAttribute('At least one tool is UNAVAILABLE',
                                                    type='Condition',
                                                    tag='WARNING')) 
+        elif any(state == 'OFF' for state in self.tool_states.values()):
+            self.ivac.add_attribute('ivac_tools_status',
+                                    AssetAttribute('No more than one connected tool is powered ON',
+                                                   type='Condition',
+                                                   tag='NORMAL')) 
         else:
             self.ivac.add_attribute('ivac_tools_status',
                                     AssetAttribute('More than one connected tool is powered ON.',
@@ -227,7 +227,7 @@ class ToolMonitoring(OpenFactoryApp):
 
         time.sleep(0.5)  # Ensure that ivac_tools_status is set before sending
         self.method("BuzzerControl", self.ivac.__getattr__('ivac_tools_status').tag)
-        print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__('ivac_tools_status').value}')
+        print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__('ivac_tools_status').tag}')
 
     def write_message_to_csv(self, msg_key: str, msg_value: dict) -> None:
         """
