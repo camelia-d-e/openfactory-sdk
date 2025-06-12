@@ -16,6 +16,10 @@ services:
       - MIN_TOGGLE_TIME=2.0
       - MAX_TOGGLE_TIME=6.0
       - ADAPTER_PORT=7878
+      - OPCUA_PORT=4840
+      - NAMESPACE_URI=demofactory
+      - DEVICE_BROWSE_NAME=IVAC
+      - SERVER_IP=virtual-ivac-tool-plus-adapter
     networks:
       - factory-net
 
