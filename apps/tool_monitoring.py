@@ -54,8 +54,10 @@ class ToolMonitoring(OpenFactoryApp):
         
         self.tool_states['A1ToolPlus'] = self.ivac.A1ToolPlus.value
         self.tool_states['A2ToolPlus'] = self.ivac.A2ToolPlus.value
+        self.gate_state = self.ivac.A2BlastGate.value
 
         print(f"Tool states initialized: {self.tool_states}")
+        print(f'Gate state initialized: {self.gate_state}')
 
         self.setup_power_monitoring_streams(ksqlClient)
 
@@ -184,12 +186,15 @@ class ToolMonitoring(OpenFactoryApp):
                               Expected keys: 'id' (str), 'value' (float or str).
         """
         if(msg_value['id'] == 'A1ToolPlus'):
-             self.tool_states['A1ToolPlus'] = msg_value['value']
+            prev_state = self.tool_states.get('A1ToolPlus', 'UNAVAILABLE')
+            self.tool_states['A1ToolPlus'] = msg_value['value']
         elif(msg_value['id'] == 'A2ToolPlus'):
+            prev_state = self.tool_states.get('A1ToolPlus', 'UNAVAILABLE')
             self.tool_states['A2ToolPlus'] = msg_value['value']
-            
-        self.verify_tool_states()
-        
+    
+        if(prev_state != msg_value['value']):
+            self.verify_tool_states()
+
         self.write_message_to_csv(msg_key, msg_value)
 
     def verify_tool_states(self) -> None:
