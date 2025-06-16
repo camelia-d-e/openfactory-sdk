@@ -193,7 +193,6 @@ class ToolMonitoring(OpenFactoryApp):
             prev_state = self.tool_states.get('A2ToolPlus', 'UNAVAILABLE')
             self.tool_states['A2ToolPlus'] = msg_value['value']
 
-        print(f'Prev state: {prev_state}, New state: {msg_value["value"]}')
         if(prev_state != msg_value['value'] and msg_value['id'] in self.tool_states.keys()):
             self.verify_tool_states()
 
