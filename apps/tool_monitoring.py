@@ -247,7 +247,7 @@ class ToolMonitoring(OpenFactoryApp):
             msg_value (dict): The message payload containing sample data.
                               Expected keys: 'id' (str), 'value' (float or str).
         """
-        with open(f'{msg_key}_msgs.csv', 'a', newline='') as csvfile:
+        with open(f'{msg_key}_{msg_value['attributes']['timestamp'].split('T')[0]}_msgs.csv', 'a', newline='') as csvfile:
             fieldnames = list(msg_value.keys())
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
