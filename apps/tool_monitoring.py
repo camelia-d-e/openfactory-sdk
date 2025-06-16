@@ -74,7 +74,7 @@ class ToolMonitoring(OpenFactoryApp):
         Creates the necessary streams and tables for power state monitoring.
         """
         try:
-            #First, cleanup any existing streams and tables
+            # First, cleanup any existing streams and tables
             ksqlClient.statement_query("DROP TABLE IF EXISTS ivac_power_state_totals;")
             ksqlClient.statement_query("DROP STREAM IF EXISTS ivac_power_durations;")
             ksqlClient.statement_query("DROP TABLE IF EXISTS latest_ivac_power_state;")
@@ -227,7 +227,7 @@ class ToolMonitoring(OpenFactoryApp):
 
         time.sleep(0.5)  # Ensure that ivac_tools_status is set before sending
         self.method("BuzzerControl", self.ivac.__getattr__('ivac_tools_status').value)
-        print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__('ivac_tools_status').value}')
+        print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__("ivac_tools_status").value}')
 
     def write_message_to_csv(self, msg_key: str, msg_value: dict) -> None:
         """
