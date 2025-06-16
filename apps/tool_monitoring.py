@@ -185,14 +185,16 @@ class ToolMonitoring(OpenFactoryApp):
             msg_value (dict): The message payload containing sample data.
                               Expected keys: 'id' (str), 'value' (float or str).
         """
+        prev_state = 'UNAVAILABLE'
         if(msg_value['id'] == 'A1ToolPlus'):
             prev_state = self.tool_states.get('A1ToolPlus', 'UNAVAILABLE')
             self.tool_states['A1ToolPlus'] = msg_value['value']
         elif(msg_value['id'] == 'A2ToolPlus'):
-            prev_state = self.tool_states.get('A1ToolPlus', 'UNAVAILABLE')
+            prev_state = self.tool_states.get('A2ToolPlus', 'UNAVAILABLE')
             self.tool_states['A2ToolPlus'] = msg_value['value']
-    
-        if(prev_state != msg_value['value']):
+
+        print(f'Prev state: {prev_state}, New state: {msg_value["value"]}')
+        if(prev_state != msg_value['value'] and msg_value['id'] in self.tool_states.keys()):
             self.verify_tool_states()
 
         self.write_message_to_csv(msg_key, msg_value)
