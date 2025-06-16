@@ -37,6 +37,8 @@ ENV APPLICATION_MANUFACTURER=${APPLICATION_MANUFACTURER}
 
 WORKDIR /ofa
 COPY tool_monitoring.py /ofa
+COPY usage_duration.sql /ofa
+COPY usage_duration_cleanup.sql /ofa
 RUN chown -R appuser:appuser /ofa
 
 # Switches to non-root user

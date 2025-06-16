@@ -76,78 +76,24 @@ class ToolMonitoring(OpenFactoryApp):
         Creates the necessary streams and tables for power state monitoring.
         """
         try:
-            #First, cleanup any existing streams and tables
-            ksqlClient.statement_query("DROP TABLE IF EXISTS ivac_power_state_totals;")
-            ksqlClient.statement_query("DROP STREAM IF EXISTS ivac_power_durations;")
-            ksqlClient.statement_query("DROP TABLE IF EXISTS latest_ivac_power_state;")
-            ksqlClient.statement_query("DROP STREAM IF EXISTS ivac_power_events;")
-            
-            print("Cleaned up existing streams and tables for power monitoring.")
+            queries = []
+            with open('usage_duration_cleanup.sql', "r") as sql_file:
+                sql_script = sql_file.read()
+                queries += sql_script.split(';')
 
-            # Create the power events stream
-            power_events_query = """
-            CREATE STREAM IF NOT EXISTS ivac_power_events WITH (KAFKA_TOPIC='power_events', PARTITIONS=1) AS
-            SELECT
-              id AS key,
-              asset_uuid,
-              value,
-              ROWTIME AS ts
-            FROM ASSETS_STREAM
-            WHERE asset_uuid = 'IVAC' AND id IN ('A1ToolPlus', 'A2ToolPlus')
-            EMIT CHANGES;
-            """
-            
-            # Create the latest state table
-            latest_state_query = """
-            CREATE TABLE IF NOT EXISTS latest_ivac_power_state AS
-            SELECT
-              key,
-              LATEST_BY_OFFSET(value) AS last_value,
-              LATEST_BY_OFFSET(ts) AS last_ts
-            FROM ivac_power_events
-            GROUP BY key;
-            """
-            
-            # Create the power durations stream
-            durations_query = """
-            CREATE STREAM IF NOT EXISTS ivac_power_durations AS
-            SELECT
-              ivac_event.key,
-              s.last_value AS state_just_ended,
-              (ivac_event.ts - s.last_ts) / 1000 AS duration_sec
-            FROM ivac_power_events ivac_event
-            JOIN latest_ivac_power_state s
-              ON ivac_event.key = s.key
-            WHERE ivac_event.value IS DISTINCT FROM s.last_value
-            EMIT CHANGES;
-            """
-            
-            # Create the totals table
-            totals_query = """
-            CREATE TABLE IF NOT EXISTS ivac_power_state_totals AS
-            SELECT
-              CONCAT(IVAC_EVENT_KEY, '_', STATE_JUST_ENDED) AS ivac_power_key,
-              SUM(DURATION_SEC) AS total_duration_sec,
-              COUNT(*) AS state_change_count
-            FROM ivac_power_durations
-            GROUP BY CONCAT(IVAC_EVENT_KEY, '_', STATE_JUST_ENDED)
-            EMIT CHANGES;
-            """
+            with open('usage_duration.sql', "r") as sql_file:
+                sql_script = sql_file.read()
+                queries += sql_script.split(';')
 
-            # Execute the queries
-            queries = [
-                ("Power Events Stream", power_events_query),
-                ("Latest State Table", latest_state_query),
-                ("Power Durations Stream", durations_query),
-                ("Power Totals Table", totals_query)
-            ]
-
-            for name, query in queries:
+            for query in queries:
+                query = query.strip()
+                if not query:
+                    continue
                 try:
-                    response = ksqlClient.statement_query(query)
-                    print(f"Created {name}: {response}")
+                    ksqlClient.statement_query(query + ';')
                 except Exception as e:
-                    print(f"Error creating {name}: {e}")
+                    print(f"Error in query execution:{query}, {e}")
+            print(f'Power monitoring streams setup successfully.')
                 
         except Exception as e:
             print(f"KSQL setup error: {e}")
