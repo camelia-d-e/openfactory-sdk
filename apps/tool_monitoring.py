@@ -9,7 +9,7 @@ from openfactory.assets import Asset, AssetAttribute
 
 class ToolMonitoring(OpenFactoryApp):
     """
-    SpindleMonitoring application for monitoring the state of tools in an IVAC system.
+    ToolMonitoring application for monitoring the state of tools in an IVAC system.
     Inherits from `OpenFactoryApp` and extends it to represent a specific application
     that monitors the state of tools in an IVAC system, updating their conditions based on events.
     Class Attributes:
@@ -21,11 +21,11 @@ class ToolMonitoring(OpenFactoryApp):
 
 
     IVAC_SYSTEM_UUID: str = os.getenv('IVAC_SYSTEM_UUID', 'IVAC')
-    SIMULATION_MODE: str = os.getenv('SIMULATION_MODE', 'true')
+    SIMULATION_MODE: str = os.getenv('SIMULATION_MODE', 'false')
 
     def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel= 'INFO'):
         """
-        Initializes the SpindleMonitoring application.
+        Initializes the ToolMonitoring application.
         Sets up the application with the provided UUID, KSQLDB client, and Kafka bootstrap servers.
         Args:
             app_uuid (str): Unique identifier for the application.
@@ -54,8 +54,10 @@ class ToolMonitoring(OpenFactoryApp):
         
         self.tool_states['A1ToolPlus'] = self.ivac.A1ToolPlus.value
         self.tool_states['A2ToolPlus'] = self.ivac.A2ToolPlus.value
+        self.gate_state = self.ivac.A2BlastGate.value
 
         print(f"Tool states initialized: {self.tool_states}")
+        print(f'Gate state initialized: {self.gate_state}')
 
         self.setup_power_monitoring_streams(ksqlClient)
 
@@ -74,16 +76,24 @@ class ToolMonitoring(OpenFactoryApp):
         Creates the necessary streams and tables for power state monitoring.
         """
         try:
+            #First, cleanup any existing streams and tables
+            ksqlClient.statement_query("DROP TABLE IF EXISTS ivac_power_state_totals;")
+            ksqlClient.statement_query("DROP STREAM IF EXISTS ivac_power_durations;")
+            ksqlClient.statement_query("DROP TABLE IF EXISTS latest_ivac_power_state;")
+            ksqlClient.statement_query("DROP STREAM IF EXISTS ivac_power_events;")
+            
+            print("Cleaned up existing streams and tables for power monitoring.")
+
             # Create the power events stream
             power_events_query = """
             CREATE STREAM IF NOT EXISTS ivac_power_events WITH (KAFKA_TOPIC='power_events', PARTITIONS=1) AS
             SELECT
-              'A1ToolPlus' AS key,
+              id AS key,
               asset_uuid,
               value,
               ROWTIME AS ts
             FROM ASSETS_STREAM
-            WHERE asset_uuid = 'VIRTUAL-IVAC-TOOL-PLUS' AND id = 'A1ToolPlus'
+            WHERE asset_uuid = 'IVAC' AND id IN ('A1ToolPlus', 'A2ToolPlus')
             EMIT CHANGES;
             """
             
@@ -155,7 +165,6 @@ class ToolMonitoring(OpenFactoryApp):
     def main_loop(self) -> None:
         """ Main loop of the App. """
         while True:
-            self.monitor_power_state_duration()
             time.sleep(1)
 
     
@@ -176,13 +185,17 @@ class ToolMonitoring(OpenFactoryApp):
             msg_value (dict): The message payload containing sample data.
                               Expected keys: 'id' (str), 'value' (float or str).
         """
+        prev_state = 'UNAVAILABLE'
         if(msg_value['id'] == 'A1ToolPlus'):
-             self.tool_states['A1ToolPlus'] = msg_value['value']
+            prev_state = self.tool_states.get('A1ToolPlus', 'UNAVAILABLE')
+            self.tool_states['A1ToolPlus'] = msg_value['value']
         elif(msg_value['id'] == 'A2ToolPlus'):
+            prev_state = self.tool_states.get('A2ToolPlus', 'UNAVAILABLE')
             self.tool_states['A2ToolPlus'] = msg_value['value']
-            
-        self.verify_tool_states()
-        
+
+        if(prev_state != msg_value['value'] and msg_value['id'] in self.tool_states.keys()):
+            self.verify_tool_states()
+
         self.write_message_to_csv(msg_key, msg_value)
 
     def verify_tool_states(self) -> None:
@@ -201,26 +214,26 @@ class ToolMonitoring(OpenFactoryApp):
             tool_states (dict): A dictionary containing tool states with tool IDs as keys.
         """
         print(f"Current tool states: {self.tool_states.values()}")
-
-        if any(state == 'OFF' for state in self.tool_states.values()):
-            self.ivac.add_attribute('ivac_tools_status',
-                                    AssetAttribute('No more than one connected tool is powered ON',
-                                                   type='Condition',
-                                                   tag='Normal')) 
-        elif any(state == 'UNAVAILABLE' for state in self.tool_states.values()):
+        
+        if any(state == 'UNAVAILABLE' for state in self.tool_states.values()):
             self.ivac.add_attribute('ivac_tools_status',
                                     AssetAttribute('At least one tool is UNAVAILABLE',
                                                    type='Condition',
-                                                   tag='Warning')) 
+                                                   tag='WARNING')) 
+        elif any(state == 'OFF' for state in self.tool_states.values()):
+            self.ivac.add_attribute('ivac_tools_status',
+                                    AssetAttribute('No more than one connected tool is powered ON',
+                                                   type='Condition',
+                                                   tag='NORMAL')) 
         else:
             self.ivac.add_attribute('ivac_tools_status',
                                     AssetAttribute('More than one connected tool is powered ON.',
                                                    type='Condition',
-                                                   tag='Fault')) 
+                                                   tag='FAULT')) 
 
         time.sleep(0.5)  # Ensure that ivac_tools_status is set before sending
-        self.method("BuzzerControl", self.ivac.__getattr__('ivac_tools_status').value)
-        print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__('ivac_tools_status').value}')
+        self.method("BuzzerControl", self.ivac.__getattr__('ivac_tools_status').tag)
+        print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__('ivac_tools_status').tag}')
 
     def write_message_to_csv(self, msg_key: str, msg_value: dict) -> None:
         """
@@ -234,7 +247,7 @@ class ToolMonitoring(OpenFactoryApp):
             msg_value (dict): The message payload containing sample data.
                               Expected keys: 'id' (str), 'value' (float or str).
         """
-        with open(f'{msg_key}_msgs.csv', 'a', newline='') as csvfile:
+        with open(f'{msg_key}_{msg_value['attributes']['timestamp'].split('T')[0]}_msgs.csv', 'a', newline='') as csvfile:
             fieldnames = list(msg_value.keys())
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
@@ -243,17 +256,11 @@ class ToolMonitoring(OpenFactoryApp):
                 writer.writeheader()
 
             writer.writerow(msg_value)
-
-    def monitor_power_state_duration(self) -> None:
-        """
-        Monitors the power state duration of the tools.
-        """
-        pass
        
 
 
 app = ToolMonitoring(
-    app_uuid='SPINDLE-MONITORING',
+    app_uuid='TOOL-MONITORING',
     ksqlClient=KSQLDBClient("http://ksqldb-server:8088"),
     bootstrap_servers="broker:29092"
 )

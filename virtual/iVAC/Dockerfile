@@ -24,6 +24,7 @@ RUN apt-get -y install git
 
 # python dependencies
 RUN pip install git+https://github.com/Demo-Smart-Factory-Concordia-University/MTCAdapters.git
+RUN pip install asyncua
 
 WORKDIR /home/$UNAME
 USER $UNAME

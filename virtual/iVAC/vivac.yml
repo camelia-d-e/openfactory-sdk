@@ -5,7 +5,7 @@ devices:
   vivac:
     uuid: VIRTUAL-IVAC-TOOL-PLUS
     agent:
-      port: 2002
+      port: 5000
       device_xml: device.xml
       adapter:
         ip: virtual-ivac-tool-plus-adapter
