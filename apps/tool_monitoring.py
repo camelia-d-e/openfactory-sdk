@@ -6,7 +6,6 @@ from openfactory.kafka import KSQLDBClient
 from openfactory.assets import Asset, AssetAttribute
 
 
-
 class ToolMonitoring(OpenFactoryApp):
     """
     ToolMonitoring application for monitoring the state of tools in an IVAC system.
@@ -19,11 +18,10 @@ class ToolMonitoring(OpenFactoryApp):
         ivac (Asset): Asset instance representing the IVAC system.
     """
 
-
     IVAC_SYSTEM_UUID: str = os.getenv('IVAC_SYSTEM_UUID', 'IVAC')
     SIMULATION_MODE: str = os.getenv('SIMULATION_MODE', 'false')
 
-    def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel= 'INFO'):
+    def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel='INFO'):
         """
         Initializes the ToolMonitoring application.
         Sets up the application with the provided UUID, KSQLDB client, and Kafka bootstrap servers.
@@ -42,8 +40,7 @@ class ToolMonitoring(OpenFactoryApp):
             type='Events',
             tag='DeviceUuid'))
 
-
-        self.ivac= Asset(self.IVAC_SYSTEM_UUID,
+        self.ivac = Asset(self.IVAC_SYSTEM_UUID,
                           ksqlClient=ksqlClient,
                           bootstrap_servers=bootstrap_servers)
 
@@ -51,7 +48,7 @@ class ToolMonitoring(OpenFactoryApp):
                                 AssetAttribute('UNAVAILABLE',
                                                type='Condition',
                                                tag='UNAVAILABLE'))
-        
+
         self.tool_states['A1ToolPlus'] = self.ivac.A1ToolPlus.value
         self.tool_states['A2ToolPlus'] = self.ivac.A2ToolPlus.value
         self.gate_state = self.ivac.A2BlastGate.value
@@ -64,12 +61,11 @@ class ToolMonitoring(OpenFactoryApp):
         self.method('SimulationMode', self.SIMULATION_MODE)
         print(f'Sent to CMD_STREAM: SimulationMode with value {self.SIMULATION_MODE}')
 
-        ## Initialize buzzer state
+        # Initialize buzzer state
         self.verify_tool_states()
 
         self.ivac.subscribe_to_events(self.on_event, 'ivac_events_group')
 
-        
     def setup_power_monitoring_streams(self, ksqlClient: KSQLDBClient) -> None:
         """
         Setup KSQL streams for monitoring power events and durations.
@@ -113,8 +109,7 @@ class ToolMonitoring(OpenFactoryApp):
         while True:
             time.sleep(1)
 
-    
-    def on_event(self, msg_key:str, msg_value:dict) -> None:
+    def on_event(self, msg_key: str, msg_value: dict) -> None:
         """
         Callback for handling new events from the ivac system.
 
@@ -202,7 +197,6 @@ class ToolMonitoring(OpenFactoryApp):
                 writer.writeheader()
 
             writer.writerow(msg_value)
-       
 
 
 app = ToolMonitoring(
@@ -211,4 +205,3 @@ app = ToolMonitoring(
     bootstrap_servers="broker:29092"
 )
 app.run()
-
