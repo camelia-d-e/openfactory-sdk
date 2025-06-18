@@ -1,11 +1,9 @@
 import os
 import time
 import csv
-from typing import Callable
 from openfactory.apps import OpenFactoryApp
 from openfactory.kafka import KSQLDBClient
 from openfactory.assets import Asset, AssetAttribute
-
 
 
 class ToolMonitoring(OpenFactoryApp):
@@ -20,11 +18,10 @@ class ToolMonitoring(OpenFactoryApp):
         ivac (Asset): Asset instance representing the IVAC system.
     """
 
-
     IVAC_SYSTEM_UUID: str = os.getenv('IVAC_SYSTEM_UUID', 'IVAC')
     SIMULATION_MODE: str = os.getenv('SIMULATION_MODE', 'false')
 
-    def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel= 'INFO'):
+    def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel='INFO'):
         """
         Initializes the ToolMonitoring application.
         Sets up the application with the provided UUID, KSQLDB client, and Kafka bootstrap servers.
@@ -43,8 +40,7 @@ class ToolMonitoring(OpenFactoryApp):
             type='Events',
             tag='DeviceUuid'))
 
-
-        self.ivac= Asset(self.IVAC_SYSTEM_UUID,
+        self.ivac = Asset(self.IVAC_SYSTEM_UUID,
                           ksqlClient=ksqlClient,
                           bootstrap_servers=bootstrap_servers)
 
@@ -52,7 +48,7 @@ class ToolMonitoring(OpenFactoryApp):
                                 AssetAttribute('UNAVAILABLE',
                                                type='Condition',
                                                tag='UNAVAILABLE'))
-        
+
         self.tool_states['A1ToolPlus'] = self.ivac.A1ToolPlus.value
         self.tool_states['A2ToolPlus'] = self.ivac.A2ToolPlus.value
         self.gate_state = self.ivac.A2BlastGate.value
@@ -65,7 +61,7 @@ class ToolMonitoring(OpenFactoryApp):
         self.method('SimulationMode', self.SIMULATION_MODE)
         print(f'Sent to CMD_STREAM: SimulationMode with value {self.SIMULATION_MODE}')
 
-        ## Initialize buzzer state
+        # Initialize buzzer state
         self.verify_tool_states()
 
         self.ivac.subscribe_to_events(self.on_event, 'ivac_events_group')
@@ -93,8 +89,8 @@ class ToolMonitoring(OpenFactoryApp):
                     ksqlClient.statement_query(query + ';')
                 except Exception as e:
                     print(f"Error in query execution:{query}, {e}")
-            print(f'Power monitoring streams setup successfully.')
-                
+            print('Power monitoring streams setup successfully.')
+
         except Exception as e:
             print(f"KSQL setup error: {e}")
 
@@ -110,8 +106,7 @@ class ToolMonitoring(OpenFactoryApp):
         while True:
             time.sleep(1)
 
-    
-    def on_event(self, msg_key:str, msg_value:dict) -> None:
+    def on_event(self, msg_key: str, msg_value: dict) -> None:
         """
         Callback for handling new events from the ivac system.
 
@@ -129,14 +124,14 @@ class ToolMonitoring(OpenFactoryApp):
                               Expected keys: 'id' (str), 'value' (float or str).
         """
         prev_state = 'UNAVAILABLE'
-        if(msg_value['id'] == 'A1ToolPlus'):
+        if (msg_value['id'] == 'A1ToolPlus'):
             prev_state = self.tool_states.get('A1ToolPlus', 'UNAVAILABLE')
             self.tool_states['A1ToolPlus'] = msg_value['value']
-        elif(msg_value['id'] == 'A2ToolPlus'):
+        elif (msg_value['id'] == 'A2ToolPlus'):
             prev_state = self.tool_states.get('A2ToolPlus', 'UNAVAILABLE')
             self.tool_states['A2ToolPlus'] = msg_value['value']
 
-        if(prev_state != msg_value['value'] and msg_value['id'] in self.tool_states.keys()):
+        if (prev_state != msg_value['value'] and msg_value['id'] in self.tool_states.keys()):
             self.verify_tool_states()
 
         self.write_message_to_csv(msg_key, msg_value)
@@ -157,26 +152,26 @@ class ToolMonitoring(OpenFactoryApp):
             tool_states (dict): A dictionary containing tool states with tool IDs as keys.
         """
         print(f"Current tool states: {self.tool_states.values()}")
-        
+
         if any(state == 'UNAVAILABLE' for state in self.tool_states.values()):
             self.ivac.add_attribute('ivac_tools_status',
                                     AssetAttribute('At least one tool is UNAVAILABLE',
                                                    type='Condition',
-                                                   tag='WARNING')) 
+                                                   tag='WARNING'))
         elif any(state == 'OFF' for state in self.tool_states.values()):
             self.ivac.add_attribute('ivac_tools_status',
                                     AssetAttribute('No more than one connected tool is powered ON',
                                                    type='Condition',
-                                                   tag='NORMAL')) 
+                                                   tag='NORMAL'))
         else:
             self.ivac.add_attribute('ivac_tools_status',
                                     AssetAttribute('More than one connected tool is powered ON.',
                                                    type='Condition',
-                                                   tag='FAULT')) 
+                                                   tag='FAULT'))
 
         time.sleep(0.5)  # Ensure that ivac_tools_status is set before sending
         self.method("BuzzerControl", self.ivac.__getattr__('ivac_tools_status').tag)
-        print(f'Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__('ivac_tools_status').tag}')
+        print(f"Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__('ivac_tools_status').tag}")
 
     def write_message_to_csv(self, msg_key: str, msg_value: dict) -> None:
         """
@@ -190,7 +185,7 @@ class ToolMonitoring(OpenFactoryApp):
             msg_value (dict): The message payload containing sample data.
                               Expected keys: 'id' (str), 'value' (float or str).
         """
-        with open(f'{msg_key}_{msg_value['attributes']['timestamp'].split('T')[0]}_msgs.csv', 'a', newline='') as csvfile:
+        with open(f"{msg_key}_{msg_value['attributes']['timestamp'].split('T')[0]}_msgs.csv'", 'a', newline='') as csvfile:
             fieldnames = list(msg_value.keys())
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
@@ -199,7 +194,6 @@ class ToolMonitoring(OpenFactoryApp):
                 writer.writeheader()
 
             writer.writerow(msg_value)
-       
 
 
 app = ToolMonitoring(
@@ -208,4 +202,3 @@ app = ToolMonitoring(
     bootstrap_servers="broker:29092"
 )
 app.run()
-

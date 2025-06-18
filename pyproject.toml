@@ -3,7 +3,8 @@ name = "openfactory-sdk"
 version = "0.1.0"
 description = "A developer SDK for simulating and deploying apps on a local OpenFactory setup."
 dependencies = [
-    "click>=8.1.0"
+    "click>=8.1.0",
+    "flake8"
 ]
 requires-python = ">=3.8"
 

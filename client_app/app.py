@@ -1,6 +1,9 @@
 from flask import Flask, send_from_directory
 
+
 class ClientApp:
+    """Client app that displays devices states."""
+
     def __init__(self):
         self.app = Flask(__name__)
         self.setup_routes()
@@ -12,6 +15,7 @@ class ClientApp:
 
     def run(self):
         self.app.run()
+
 
 if __name__ == "__main__":
     my_app = ClientApp()
