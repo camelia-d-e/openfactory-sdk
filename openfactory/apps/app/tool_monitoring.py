@@ -1,6 +1,7 @@
 import os
 import time
 import csv
+from typing import Callable
 from openfactory.apps import OpenFactoryApp
 from openfactory.kafka import KSQLDBClient
 from openfactory.assets import Asset, AssetAttribute
@@ -69,7 +70,6 @@ class ToolMonitoring(OpenFactoryApp):
 
         self.ivac.subscribe_to_events(self.on_event, 'ivac_events_group')
 
-        
     def setup_power_monitoring_streams(self, ksqlClient: KSQLDBClient) -> None:
         """
         Setup KSQL streams for monitoring power events and durations.
@@ -101,11 +101,8 @@ class ToolMonitoring(OpenFactoryApp):
     def app_event_loop_stopped(self) -> None:
         """
         Called automatically when the main application event loop is stopped.
-
-        This method handles cleanup tasks such as stopping the temperature
-        sensor's sample subscription to ensure a graceful shutdown.
         """
-        print("Stopping Temperature sensor consumer thread ...")
+        print("Stopping iVAC consumer thread ...")
         self.ivac.stop_events_subscription()
 
     def main_loop(self) -> None:
