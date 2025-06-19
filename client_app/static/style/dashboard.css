@@ -1,0 +1,7 @@
+.dashboard {
+    flex: 1;
+    padding: 32px;
+    background: #fafafa;
+    box-sizing: border-box;
+    overflow-y: auto;
+}

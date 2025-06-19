@@ -1,0 +1,12 @@
+{
+  "name": "My app",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "client_app/static/icons/ulaval-logo.png",
+      "sizes": "48x48",
+      "type": "image/webp"
+    }
+  ],
+  "display": "standalone"
+}

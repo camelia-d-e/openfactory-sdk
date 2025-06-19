@@ -1,0 +1,43 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-layout {
+    display: flex;
+    flex: 1 auto;
+    min-height: 0;
+    height: 100%;
+}
+
+.custom-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    min-height: 48px;
+}
+
+.header-logo {
+height: 32px;
+width: 32px;
+margin-right: 12px;
+object-fit: contain;
+border-radius: 20%;
+}
+
+.header-title {
+font-size: 1.1rem;
+font-weight: 500;
+color: #222;
+letter-spacing: 0.02em;
+}

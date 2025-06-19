@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.0/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="../static/style/sidebar.css">
+</head>
+<aside class="menu">
+    <ul class="menu-list">
+        <li>
+            <a class="is-active"><span class="icon"><i class="fas fa-cogs"></i></span> Dashboard</a>
+        </li>
+        <li>
+            <a><span class="icon"><i class="fas fa-network-wired"></i></span> Devices</a>
+            <ul>
+                {% for device in all_devices %}
+                <li><a>{{device}}</a></li>
+                {% endfor %}
+                <li><a>Add other devices...</a></li>
+            </ul>
+        </li>
+        <li>
+            <a><span class="icon"><i class="fas fa-cog"></i></span> Settings</a>
+        </li>
+    </ul>
+</aside>
+</html>
