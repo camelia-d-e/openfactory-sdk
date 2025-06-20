@@ -39,7 +39,6 @@ class ConnectionManager:
 
     async def send_to_device_connections(self, device_uuid: str, message: dict):
         if device_uuid in self.active_connections:
-            # Create a copy to avoid modification during iteration
             connections_copy = self.active_connections[device_uuid].copy()
             for connection in connections_copy:
                 if connection in self.outgoing_queues:
@@ -48,7 +47,6 @@ class ConnectionManager:
                         await queue.put(json.dumps(message))
                     except Exception as e:
                         print(f"Error queuing message for connection: {e}")
-                        # Remove broken connection
                         await self.disconnect(connection)
 
     def get_device_connection_count(self, device_uuid: str) -> int:
@@ -67,7 +65,7 @@ class OpenFactoryWebSocketAPI(OpenFactoryApp):
         self.setup_routes(ksqlClient, bootstrap_servers)
         self.app.include_router(self.router)
         self.running = True
-        self.loop = None  # Will be set when event loop is available
+        self.loop = None
         self.event_processing_task = None
 
     def setup_routes(self, ksqlClient, bootstrap_servers):
@@ -83,7 +81,6 @@ class OpenFactoryWebSocketAPI(OpenFactoryApp):
         async def websocket_device_stream(websocket: WebSocket, device_uuid: str):
             await self.connection_manager.connect(websocket, device_uuid)
             
-            # Initialize asset subscription if not already done
             if device_uuid not in self.devices_assets:
                 try:
                     self.devices_assets[device_uuid] = Asset(
@@ -100,7 +97,6 @@ class OpenFactoryWebSocketAPI(OpenFactoryApp):
                     print(f"Error initializing asset for {device_uuid}: {e}")
             
             try:
-                # Send initial connection data
                 initial_data = {
                     "event": "connection_established",
                     "device_uuid": device_uuid,
@@ -124,7 +120,6 @@ class OpenFactoryWebSocketAPI(OpenFactoryApp):
                                     await websocket.send_text(msg)
                                     print(f"Message sent: {msg}")
                             except asyncio.TimeoutError:
-                                # Send periodic ping to keep connection alive
                                 if websocket.client_state == WebSocketState.CONNECTED:
                                     ping_msg = {
                                         "event": "ping",
@@ -154,7 +149,6 @@ class OpenFactoryWebSocketAPI(OpenFactoryApp):
                                     if websocket.client_state == WebSocketState.CONNECTED:
                                         await websocket.send_text(json.dumps(error_msg))
                             except asyncio.TimeoutError:
-                                # Client hasn't sent anything for 30 seconds, check if still connected
                                 if websocket.client_state != WebSocketState.CONNECTED:
                                     break
                             except WebSocketDisconnect:
@@ -166,7 +160,6 @@ class OpenFactoryWebSocketAPI(OpenFactoryApp):
                     except Exception as e:
                         print(f"Receiver coroutine error: {e}")
 
-                # Run sender and receiver concurrently
                 await asyncio.gather(
                     sender(),
                     receiver(),
@@ -245,10 +238,8 @@ class OpenFactoryWebSocketAPI(OpenFactoryApp):
         """Handle messages received from WebSocket clients"""
         try:
             print(f"Received message from {device_uuid}: {message}")
-            # Add your client message handling logic here
-            # For example, you might want to respond to specific message types
+
             if message.get("type") == "pong":
-                # Handle pong response to ping
                 pass
         except Exception as e:
             print(f"Error handling client message: {e}")
