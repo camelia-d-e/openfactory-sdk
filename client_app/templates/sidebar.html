@@ -10,13 +10,10 @@
 <aside class="menu">
     <ul class="menu-list">
         <li>
-            <a class="is-active"><span class="icon"><i class="fas fa-cogs"></i></span> Dashboard</a>
-        </li>
-        <li>
             <a><span class="icon"><i class="fas fa-network-wired"></i></span> Devices</a>
             <ul>
                 {% for device in all_devices %}
-                <li><a>{{device}}</a></li>
+                <li><a href="{{ url_for('device_detail', device_uuid=device['device_uuid']) }}">{{device['device_uuid']}}</a></li>
                 {% endfor %}
                 <li><a>Add other devices...</a></li>
             </ul>

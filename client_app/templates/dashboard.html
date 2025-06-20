@@ -2,28 +2,65 @@
 <html>
 <head>
     <meta charset="UTF-8" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="device-uuid" content="{{ device_uuid }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.0/css/bulma.min.css">
     <link rel="stylesheet" href="../static/style/dashboard.css">
+    <script src="https://unpkg.com/jsplumb@2.15.6/dist/js/jsplumb.min.js"></script>
+    <script src="../static/script/dashboard.js"></script>
 </head>
+<div id="jsplumb-container" style="position: relative;">
 <div class="dashboard">
-    {% for dataitem in device %}
-    <div class="card">
-        <div class="card-image">
-            <figure class="image is-4by3">
-            <img
-                src="https://bulma.io/assets/images/placeholders/1280x960.png"
-                alt="Placeholder image"
-            />
-            </figure>
-        </div>
-        <div class="card-content">
-            <div class="media">
-                <div class="media-content">
-                    <p class="title is-4">{{device}}</p>
+    <div class="tool-column">
+        {% for dataitem in device %}
+            {% if dataitem['type'] == 'tool' %}
+            <div class="tool-card" id="card-{{ dataitem['id'] }}">
+                <div class="tool-card-image">
+                    <figure class="tool-image">
+                        <img
+                            src="../static/icons/tool.png"
+                            alt="Tool icon"
+                        />
+                    </figure>
+                </div>
+                <div class="tool-card-content">
+                    <div class="media">
+                        <div class="media-content">
+                            <p class="title is-6">{{dataitem['id']}}</p>
+                             <p class="subtitle is-6" id="{{dataitem['id']}}">{{dataitem['value']}}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+            {% endif %}
+        {% endfor %}
     </div>
-    {% endfor %}
+
+    <div class="gate-column">
+        {% for dataitem in device %}
+            {% if dataitem['type'] == 'gate' or dataitem['related_to'] == 'gate' %}
+            <div class="gate-card" id="card-{{ dataitem['id'] }}">
+                <div class="gate-card-image">
+                    <figure class="gate-image">
+                        <img
+                            src="../static/icons/blast-gate-open.png"
+                            alt="Tool icon"
+                            width="124"
+                            height="124"
+                        />
+                    </figure>
+                </div>
+                <div class="gate-card-content">
+                    <div class="media">
+                        <div class="media-content">
+                            <p class="title is-6">{{dataitem['id']}}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
 </div>
