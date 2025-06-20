@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="device-uuid" content="{{ device_uuid }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.0/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="../static/style/dashboard.css">
     <script src="https://unpkg.com/jsplumb@2.15.6/dist/js/jsplumb.min.js"></script>
     <script src="../static/script/dashboard.js"></script>
@@ -15,20 +16,32 @@
     <div class="tool-column">
         {% for dataitem in device %}
             {% if dataitem['type'] == 'tool' %}
-            <div class="tool-card" id="card-{{ dataitem['id'] }}">
-                <div class="tool-card-image">
-                    <figure class="tool-image">
-                        <img
-                            src="../static/icons/tool.png"
-                            alt="Tool icon"
-                        />
-                    </figure>
+            <div class="tool-cards-group">
+                 <div class="spindle-card" id="{{dataitem['id'][:-8]}}">
+                    <div class="spindle-card-image">
+                        <figure class="spindle-image">
+                            <img
+                                src="../static/icons/spindle.png"
+                                alt="Spindle icon"
+                            />
+                        </figure>
+                    </div>
                 </div>
-                <div class="tool-card-content">
-                    <div class="media">
-                        <div class="media-content">
-                            <p class="title is-6">{{dataitem['id']}}</p>
-                            <p class="subtitle is-6" id="{{dataitem['id']}}">{{dataitem['value']}}</p>
+                <div class="tool-card" id="card-{{ dataitem['id'] }}">
+                    <span class="tag" id="tool-is-powered-tag"><span class="icon" id="{{dataitem['id']}}""><i class="fas fa-bolt fa-lg"></i></span></span>
+                    <div class="tool-card-image">
+                        <figure class="tool-image">
+                            <img
+                                src="../static/icons/tool.png"
+                                alt="Tool icon"
+                            />
+                        </figure>
+                    </div>
+                    <div class="tool-card-content">
+                        <div class="media">
+                            <div class="media-content">
+                                <p class="title is-6">{{dataitem['id']}}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -38,9 +51,7 @@
     </div>
 
     <div class="gate-column">
-        {% for dataitem in device %}
-            {% if dataitem['type'] == 'gate' or dataitem['related_to'] == 'gate' %}
-            <div class="gate-card" id="card-{{ dataitem['id'] }}">
+        <div class="gate-card" id="card-A1BlastGate">
                 <div class="gate-card-image">
                     <figure class="gate-image">
                         <img
@@ -54,8 +65,30 @@
                 <div class="gate-card-content">
                     <div class="media">
                         <div class="media-content">
+                            <p class="title is-6">A1BlastGate</p>
+                            <p class="subtitle is-6" id="A1BlastGate">OPEN</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% for dataitem in device %}
+            {% if dataitem['type'] == 'gate' or dataitem['related_to'] == 'gate' %}
+            <div class="gate-card" id="card-{{ dataitem['id'] }}">
+                <div class="gate-card-image">
+                    <figure class="gate-image">
+                        <img
+                            src="../static/icons/blast-gate-open.png"
+                            alt="Tool icon"
+                            id="{{dataitem['id']}}"
+                            width="124"
+                            height="124"
+                        />
+                    </figure>
+                </div>
+                <div class="gate-card-content">
+                    <div class="media">
+                        <div class="media-content">
                             <p class="title is-6">{{dataitem['id']}}</p>
-                            <p class="subtitle is-6" id="{{dataitem['id']}}">{{dataitem['value']}}</p>
                         </div>
                     </div>
                 </div>

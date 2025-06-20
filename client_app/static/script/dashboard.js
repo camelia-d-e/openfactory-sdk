@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function() {
     jsPlumb.ready(function() {
         jsPlumb.setContainer("jsplumb-container")
 
-        const toolCards = Array.from(document.querySelectorAll('.tool-card'))
+        const spindleCards = Array.from(document.querySelectorAll('.spindle-card'))
         const gateCards = Array.from(document.querySelectorAll('.gate-card'))
 
         function getPrefix(id) {
@@ -10,22 +10,21 @@ document.addEventListener("DOMContentLoaded", function() {
             return match ? match[1] : id.substring(0, 2)
         }
 
-        toolCards.forEach(tool => {
-            const toolId = tool.id.replace('card-', '')
-            const toolPrefix = getPrefix(toolId)
+        spindleCards.forEach(spindle => {
+            const spindlePrefix = spindle.id
 
             gateCards.forEach(gate => {
                 const gateId = gate.id.replace('card-', '')
                 const gatePrefix = getPrefix(gateId)
                 
-                if (toolPrefix === gatePrefix) {
+                if (spindlePrefix === gatePrefix) {
                     jsPlumb.connect({
-                        source: tool.id,
+                        source: spindle.id,
                         target: gate.id,
-                        anchors: ["Right", "Left"],
+                        anchors: ["Top", "Top"],
                         endpoint: "Blank",
-                        connector: ["Flowchart", { stub: 20, gap: 2, cornerRadius: 5 }],
-                        paintStyle: { stroke: "#222", strokeWidth: 2 },
+                        connector: ["Flowchart", { stub: 20, gap: 0, cornerRadius: 5 }],
+                        paintStyle: { stroke: "#222", strokeWidth: 15 },
                         overlays: [] 
                     })
                 }
@@ -45,7 +44,6 @@ if(device_uuid){
 
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log(data)
 
         if (data.event === "device_change" && data.data) {
             const id = data.data.id;
@@ -53,15 +51,33 @@ if(device_uuid){
 
             const valueElem = document.getElementById(id);
             if (valueElem) {
-                valueElem.textContent = value;
+                if (id.includes('Tool'))
+                {
+                    valueElem.style.color = (value === "ON"? "#6ed43f" : "red")
+                    valueElem.parentElement.style.border = (value === "ON"? "2px solid #6ed43f" : "2px solid red")
+                }
+
+                if (id.includes('Gate')){
+                    valueElem.src = (value === "OPEN"? "../static/icons/blast-gate-open.png": "../static/icons/blast-gate-closed.png")
+                }
             }
         }
 
         if (data.event === "connection_established" && data.data_items) {
             Object.entries(data.data_items).forEach(([id, value]) => {
                 const valueElem = document.getElementById(id);
+                
                 if (valueElem) {
-                    valueElem.textContent = value;
+                    if (id.includes('Tool'))
+                    {
+                        valueElem.style.color = (value === "ON"? "#6ed43f" : "red")
+                        valueElem.parentElement.style.border = (value === "ON"? "2px solid #6ed43f" : "2px solid red")
+                    }
+
+                    if (id.includes('Gate'))
+                    {
+                        valueElem.src = (value === "OPEN"? "../static/icons/blast-gate-open.png": "../static/icons/blast-gate-closed.png")
+                    }
                 }
             });
         }
