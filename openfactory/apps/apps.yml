@@ -2,3 +2,6 @@ apps:
   tool_monitoring:
     uuid: TOOL-MONITORING
     image: ivac-tool-monitoring-app
+  openfactory_api:
+    uuid: OFA-API
+    image: ofa-api
