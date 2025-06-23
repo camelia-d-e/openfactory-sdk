@@ -11,6 +11,11 @@ body {
     flex-direction: column;
 }
 
+nav {
+    display:flex;
+    justify-content: space-between;
+}
+
 .main-layout {
     display: flex;
     flex: 1 auto;
@@ -20,6 +25,7 @@ body {
 
 .custom-header {
     display: flex;
+    flex: auto 1;
     align-items: center;
     padding: 12px 20px;
     background: #fff;
@@ -27,17 +33,27 @@ body {
     min-height: 48px;
 }
 
+.logo-container{
+    width: fit-content;
+    display:flex;
+    flex-direction: row;
+}
+
 .header-logo {
-height: 32px;
-width: 32px;
-margin-right: 12px;
-object-fit: contain;
-border-radius: 20%;
+    height: 32px;
+    width: 32px;
+    margin-right: 12px;
+    object-fit: contain;
+    border-radius: 20%;
 }
 
 .header-title {
-font-size: 1.1rem;
-font-weight: 500;
-color: #222;
-letter-spacing: 0.02em;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #222;
+    letter-spacing: 0.02em;
+}
+
+.simulation-mode-switch-section {
+    justify-self:end;
 }

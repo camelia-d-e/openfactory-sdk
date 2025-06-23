@@ -26,6 +26,13 @@
                             />
                         </figure>
                     </div>
+                    <div class="tool-card-content">
+                        <div class="media">
+                            <div class="media-content">
+                                <p class="title is-6 has-text-centered">Tool{{dataitem['id'][1:-8]}}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="tool-card" id="card-{{ dataitem['id'] }}">
                     <span class="tag" id="tool-is-powered-tag"><span class="icon" id="{{dataitem['id']}}""><i class="fas fa-bolt fa-lg"></i></span></span>
@@ -40,7 +47,7 @@
                     <div class="tool-card-content">
                         <div class="media">
                             <div class="media-content">
-                                <p class="title is-6">{{dataitem['id']}}</p>
+                                <p class="title is-6 has-text-centered">{{dataitem['id']}}</p>
                             </div>
                         </div>
                     </div>
@@ -66,7 +73,7 @@
                 <div class="gate-card-content">
                     <div class="media">
                         <div class="media-content">
-                            <p class="title is-6">A1BlastGate</p>
+                            <p class="title is-6 has-text-centered">A1BlastGate</p>
                         </div>
                     </div>
                 </div>
@@ -95,6 +102,28 @@
             </div>
             {% endif %}
         {% endfor %}
+    </div>
+    <div class="dust-collector-column">
+        <div class="dust-collector-card" id="card-dust-collector">
+            <div class="gate-card-image">
+                <figure class="gate-image">
+                    <img
+                        src="../static/icons/dust-collector.png"
+                        alt="Dust collector icon"
+                        id="dust-collector"
+                        width="248"
+                        height="248"
+                    />
+                </figure>
+            </div>
+            <div class="gate-card-content">
+                <div class="media">
+                    <div class="media-content">
+                        <p class="title is-6 has-text-centered">Dust Collector</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 </div>

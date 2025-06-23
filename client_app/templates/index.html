@@ -5,12 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.0/css/bulma.min.css">
     <link rel="stylesheet" href="../static/style/main.css">
+    <link rel="stylesheet" href="../static/style/switch.css">
 </head>
 <body>
     <header>
         <nav class="custom-header">
-            <img src="../static/icons/lab-usine-logo.png" alt="Logo" class="header-logo">
-            <div class="header-title">OpenFactory Client App</div>
+            <div class="logo-container">
+                <img src="../static/icons/lab-usine-logo.png" alt="Logo" class="header-logo">
+                <div class="header-title">OpenFactory Client App</div>
+            </div>
+            <div class="simulation-mode-switch-section">
+                <label class="switch is-rounded">
+                    <input id="simulationModeToggle" type="checkbox" value="false" checked="" onclick="sendSimulationMode()">
+                    <span class="check is-success"></span>
+                    <span class="control-label">Simulation Mode</span>
+                </label>
+            </div>
         </nav>
     </header>
     <div class="main-layout">

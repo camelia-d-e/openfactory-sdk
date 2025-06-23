@@ -8,14 +8,7 @@
     box-sizing: border-box;
 }
 
-.tool-column {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-}
-
-.gate-column {
+.tool-column, .gate-column, .dust-collector-column {
     flex: 1 1 0;
     display: flex;
     flex-direction: column;
@@ -67,6 +60,26 @@
     top: 20%;
     transform: translateY(-50%);
     z-index: 5;
+}
+
+.dust-collector-card{
+    width: fit-content;
+    top: 140px;
+    left: 110px;
+    min-width: 10vw;
+    max-width: 25vw;
+    margin-bottom: 40px;
+    margin-top:0 ;
+    margin-right:50px;
+    padding: 1rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    border: 2px solid #000;
+    position: relative;
 }
 
 .tool-card-image, .gate-card-image, .spindle-card-image {

@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const spindleCards = Array.from(document.querySelectorAll('.spindle-card'))
         const gateCards = Array.from(document.querySelectorAll('.gate-card'))
+        const dustCollectorCard = document.querySelector('.dust-collector-card')
 
         function getPrefix(id) {
             const match = id.match(/^([A-Z]+\d+)/)
@@ -28,6 +29,16 @@ document.addEventListener("DOMContentLoaded", function() {
                         overlays: [] 
                     })
                 }
+
+                jsPlumb.connect({
+                        source: gate.id,
+                        target: dustCollectorCard.id,
+                        anchors: ["AutoDefault", "AutoDefault"],
+                        endpoint: "Blank",
+                        connector: ["Flowchart", { stub: 20, gap: 0, cornerRadius: 5 }],
+                        paintStyle: { stroke: "#222", strokeWidth: 15 },
+                        overlays: [] 
+                    })
             })
         })
     })
@@ -51,6 +62,7 @@ if(device_uuid){
 
             const valueElem = document.getElementById(id);
             if (valueElem) {
+                
                 if (id.includes('Tool'))
                 {
                     valueElem.style.color = (value === "ON"? "#6ed43f" : "red")
