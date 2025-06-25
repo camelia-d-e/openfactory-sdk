@@ -3,6 +3,7 @@ from collections import defaultdict
 import json
 import threading
 from typing import List, Dict, Set
+from pydantic import BaseModel
 import uvicorn
 import time
 from fastapi import APIRouter, FastAPI, WebSocket, WebSocketDisconnect
@@ -11,6 +12,11 @@ from queue import Queue
 from openfactory.apps import OpenFactoryApp
 from openfactory.kafka import KSQLDBClient
 from openfactory.assets import Asset
+
+class Command(BaseModel):
+    name: str
+    args:  str | bool | None
+
 
 class ConnectionManager:
     def __init__(self):
@@ -52,7 +58,7 @@ class ConnectionManager:
     def get_device_connection_count(self, device_uuid: str) -> int:
         return len(self.active_connections[device_uuid])
 
-class OpenFactoryWebSocketAPI(OpenFactoryApp):
+class OpenFactoryAPI(OpenFactoryApp):
     def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel='INFO'):
         super().__init__(app_uuid, ksqlClient, bootstrap_servers, loglevel)
         self.asset_uuid = "OFA-API-WS"
@@ -76,6 +82,32 @@ class OpenFactoryWebSocketAPI(OpenFactoryApp):
                 "version": "2.0.0",
                 "websocket_endpoint": "/devices/{device_uuid}/ws",
             }
+
+        @self.router.get("/devices")
+        async def list_devices():
+            devices = self.get_all_devices()
+            device_status = []
+            for device_uuid in devices:
+                device_status.append({
+                    "device_uuid": device_uuid,
+                    "connections": self.connection_manager.get_device_connection_count(device_uuid)
+                })
+            return {
+                "devices": device_status,
+                "total_devices": len(devices)
+            }
+
+        @self.router.get("/devices/{device_uuid}/dataitems")
+        async def get_device_dataitems_endpoint(device_uuid: str):
+            return {
+                "device_uuid": device_uuid,
+                "data_items": self.get_device_dataitems(device_uuid),
+            }
+        
+        @self.router.post("/simulation-mode")
+        async def set_simulation_mode(simulation_mode: Command):
+            print(f"Command sent: {simulation_mode.name}, {str(simulation_mode.args).lower()}")
+            self.method(simulation_mode.name, str(simulation_mode.args).lower())
 
         @self.router.websocket("/devices/{device_uuid}/ws")
         async def websocket_device_stream(websocket: WebSocket, device_uuid: str):
@@ -118,7 +150,6 @@ class OpenFactoryWebSocketAPI(OpenFactoryApp):
                                 msg = await asyncio.wait_for(queue.get(), timeout=1.0)
                                 if websocket.client_state == WebSocketState.CONNECTED:
                                     await websocket.send_text(msg)
-                                    print(f"Message sent: {msg}")
                             except asyncio.TimeoutError:
                                 if websocket.client_state == WebSocketState.CONNECTED:
                                     ping_msg = {
@@ -171,27 +202,6 @@ class OpenFactoryWebSocketAPI(OpenFactoryApp):
             finally:
                 await self.connection_manager.disconnect(websocket)
 
-        @self.router.get("/devices")
-        async def list_devices():
-            devices = self.get_all_devices()
-            device_status = []
-            for device_uuid in devices:
-                device_status.append({
-                    "device_uuid": device_uuid,
-                    "connections": self.connection_manager.get_device_connection_count(device_uuid)
-                })
-            return {
-                "devices": device_status,
-                "total_devices": len(devices)
-            }
-
-        @self.router.get("/devices/{device_uuid}/dataitems")
-        async def get_device_dataitems_endpoint(device_uuid: str):
-            return {
-                "device_uuid": device_uuid,
-                "data_items": self.get_device_dataitems(device_uuid),
-            }
-
     async def setup_background_tasks(self):
         """Setup background task for processing device events"""
         async def process_device_events():
@@ -206,7 +216,6 @@ class OpenFactoryWebSocketAPI(OpenFactoryApp):
                                 "timestamp": time.time(),
                                 "data": dict(change)
                             }
-                            print(f"Processing event: {message}")
                             await self.connection_manager.send_to_device_connections(device_uuid, message)
                     
                     await asyncio.sleep(0.1)
@@ -291,13 +300,12 @@ async def startup_event(app_instance):
     await app_instance.setup_background_tasks()
 
 def run_websocket_api():
-    app_instance = OpenFactoryWebSocketAPI(
+    app_instance = OpenFactoryAPI(
         app_uuid='OFA-API',
         ksqlClient=KSQLDBClient("http://ksqldb-server:8088"),
         bootstrap_servers="broker:29092"
     )
     
-    # Add startup event to initialize async components
     @app_instance.app.on_event("startup")
     async def startup():
         await startup_event(app_instance)

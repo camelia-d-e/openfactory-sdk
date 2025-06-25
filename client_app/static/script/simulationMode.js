@@ -3,7 +3,7 @@ async function sendSimulationMode() {
     const simulationMode = checkbox.checked;
     
     try {
-        const response = await fetch('/simulationMode', {
+        const response = await fetch('/simulation-mode', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

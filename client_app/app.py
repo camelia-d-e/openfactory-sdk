@@ -1,3 +1,4 @@
+import os
 from fastapi.concurrency import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request
@@ -5,7 +6,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from device_connection_manager import DeviceConnectionManager
 
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 
 class OpenFactoryClientApp:
     """Client app for openfactory API"""
@@ -41,7 +42,9 @@ class OpenFactoryClientApp:
                 "device_dataitems": dataitems
             }
         )
-
+    
+    async def set_simulation_mode(self, simulation_mode: bool):
+        return await self.device_manager.set_simulation_mode(simulation_mode)
    
 templates = Jinja2Templates(directory="templates")
 ofc_app = OpenFactoryClientApp(API_BASE_URL)
@@ -61,6 +64,14 @@ async def index(request: Request):
 @app.get("/devices/{device_uuid}", response_class=HTMLResponse)
 async def device_detail(request: Request, device_uuid: str):
     return await ofc_app.device_detail(request, device_uuid)
+
+@app.post("/simulation-mode")
+async def set_simulation_mode(request: Request):
+    data = await request.json()
+    simulation_mode = data.get("enabled", False)
+    
+    return await ofc_app.set_simulation_mode(simulation_mode)
+    
 
 if __name__ == "__main__":
     import uvicorn
