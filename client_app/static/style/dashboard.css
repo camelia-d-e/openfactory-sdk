@@ -70,7 +70,7 @@
     max-width: 25vw;
     margin-bottom: 40px;
     margin-top:0 ;
-    margin-right:50px;
+    margin-right:90px;
     padding: 1rem;
     background: #fff;
     border-radius: 8px;
@@ -119,7 +119,7 @@
     word-break: break-word;
 }
 
-.tag:not(body) {
+#tool-is-powered-tag{
     position: absolute;
     top: -8px;
     right: -8px;
@@ -130,12 +130,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid black;
+    border: 2px solid #6ed43f;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    background: white;
 }
 
 .icon {
-    color: black;
+    color: #6ed43f;
 }
 
 @media (max-width: 900px) {

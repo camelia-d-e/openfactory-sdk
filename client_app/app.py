@@ -20,6 +20,9 @@ class OpenFactoryClientApp:
         for device in self.device_manager.devices:
             uuid = device['device_uuid']
             await self.device_manager.fetch_device_dataitems(uuid)
+        for device in self.device_manager.devices:
+            for dataitem in self.device_manager.device_dataitems:
+                await self.device_manager.fetch_dataitem_stats(uuid, dataitem)
 
     async def index(self, request: Request):
         return templates.TemplateResponse(

@@ -98,11 +98,17 @@ class OpenFactoryAPI(OpenFactoryApp):
             }
 
         @self.router.get("/devices/{device_uuid}/dataitems")
-        async def get_device_dataitems_endpoint(device_uuid: str):
+        async def get_device_dataitems(device_uuid: str):
             return {
                 "device_uuid": device_uuid,
                 "data_items": self.get_device_dataitems(device_uuid),
             }
+        
+        @self.router.get("/devices/{device_uuid}/dataitems/{dataitem_id}")
+        async def get_device_dataitems_stats(device_uuid:str, dataitem_id: str):
+            result = self.get_dataitem_stats(dataitem_id)
+            print(result)
+            return result
         
         @self.router.post("/simulation-mode")
         async def set_simulation_mode(simulation_mode: Command):
@@ -242,6 +248,15 @@ class OpenFactoryAPI(OpenFactoryApp):
         except Exception as e:
             print(f"Error getting device dataitems for {device_uuid}: {e}")
             return {}
+        
+    def get_dataitem_stats(self, dataitem_id) -> dict:
+        try:
+            query = f"SELECT IVAC_POWER_KEY, TOTAL_DURATION_SEC FROM IVAC_POWER_STATE_TOTALS WHERE IVAC_POWER_KEY LIKE '{dataitem_id}%' ;"
+            df = self.ksqlClient.query(query)
+            return dict(zip(df.IVAC_POWER_KEY.str[11:].tolist(), df.TOTAL_DURATION_SEC.tolist())) if 'IVAC_POWER_KEY' in df.columns and 'TOTAL_DURATION_SEC' in df.columns else {}
+        except Exception as e:
+            print(f"Error getting dataitems stats")
+            return {}
 
     async def handle_client_message(self, device_uuid: str, message: dict):
         """Handle messages received from WebSocket clients"""
@@ -257,15 +272,20 @@ class OpenFactoryAPI(OpenFactoryApp):
         try:
             device_uuid = msg_key
             msg_value['device_uuid'] = device_uuid
+            self.add_duration_updates(msg_value)
             self.device_queues[device_uuid].put(msg_value)
         except Exception as e:
             print(f"Error processing device event: {e}")
+
+    def add_duration_updates(self, msg_value):
+        query = f"SELECT IVAC_POWER_KEY, TOTAL_DURATION_SEC FROM IVAC_POWER_STATE_TOTALS WHERE IVAC_POWER_KEY LIKE '{msg_value['id']}%';"
+        df = self.ksqlClient.query(query)
+        msg_value['durations'] = dict(zip(df.IVAC_POWER_KEY.str[11:].tolist(), df.TOTAL_DURATION_SEC.tolist())) if 'IVAC_POWER_KEY' in df.columns and 'TOTAL_DURATION_SEC' in df.columns else {}
 
     async def app_event_loop_stopped(self) -> None:
         print("Stopping API consumer thread...")
         self.running = False
         
-        # Cancel background task
         if self.event_processing_task and not self.event_processing_task.done():
             self.event_processing_task.cancel()
             try:
@@ -273,7 +293,6 @@ class OpenFactoryAPI(OpenFactoryApp):
             except asyncio.CancelledError:
                 pass
         
-        # Stop asset subscriptions
         for device_uuid, asset in self.devices_assets.items():
             try:
                 asset.stop_events_subscription()
