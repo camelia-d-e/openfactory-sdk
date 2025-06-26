@@ -61,7 +61,7 @@ class ConnectionManager:
 class OpenFactoryAPI(OpenFactoryApp):
     def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel='INFO'):
         super().__init__(app_uuid, ksqlClient, bootstrap_servers, loglevel)
-        self.asset_uuid = "OFA-API-WS"
+        self.asset_uuid = "IVAC"
         self.device_queues = defaultdict(Queue)
         self.devices_assets = {}
         self.ksqlClient = ksqlClient
@@ -106,8 +106,8 @@ class OpenFactoryAPI(OpenFactoryApp):
         
         @self.router.post("/simulation-mode")
         async def set_simulation_mode(simulation_mode: Command):
-            print(f"Command sent: {simulation_mode.name}, {str(simulation_mode.args).lower()}")
             self.method(simulation_mode.name, str(simulation_mode.args).lower())
+            print(f'Sent to CMD_STREAM: SimulationMode with value {str(simulation_mode.args).lower()}')
 
         @self.router.websocket("/devices/{device_uuid}/ws")
         async def websocket_device_stream(websocket: WebSocket, device_uuid: str):
