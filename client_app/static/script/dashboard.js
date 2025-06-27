@@ -46,21 +46,83 @@ document.addEventListener("DOMContentLoaded", function() {
     initializeDefaultCharts();
 })
 
+function saveChartData(dataitemId, data) {
+    try {
+        const existingData = JSON.parse(localStorage.getItem('chartData') || '{}');
+        existingData[dataitemId] = data;
+        localStorage.setItem('chartData', JSON.stringify(existingData));
+    } catch (e) {
+        console.error('Error saving chart data:', e);
+    }
+}
+
+function getStoredChartData(dataitemId) {
+    try {
+        const chartData = JSON.parse(localStorage.getItem('chartData') || '{}');
+        return chartData[dataitemId] || null;
+    } catch (e) {
+        console.error('Error retrieving chart data:', e);
+        return null;
+    }
+}
+
+function saveDeviceStates(states) {
+    try {
+        localStorage.setItem('deviceStates', JSON.stringify(states));
+    } catch (e) {
+        console.error('Error saving device states:', e);
+    }
+}
+
+function getStoredDeviceStates() {
+    try {
+        return JSON.parse(localStorage.getItem('deviceStates') || '{}');
+    } catch (e) {
+        console.error('Error retrieving device states:', e);
+        return {};
+    }
+}
+
 function initializeDefaultCharts() {
     const toolElements = document.querySelectorAll('[id$="-pie-chart"]');
     const initialData = document.getElementById('initialChartsData')
-    console.log(initialData.value)
-
+    console.log(initialData ? initialData.value : 'No initial data element found')
 
     toolElements.forEach(svg => {
         const dataitemId = svg.id.replace('-pie-chart', '');
         
-        let defaultData = {}
-        let totalTime = 0
-        if (initialData.value){
-            defaultData = initialData[dataitemId]
-            totalTime = defaultData['ON'] + defaultData['OFF'] + defaultData['UNAVAILABLE']
-        } else{
+        let defaultData = getStoredChartData(dataitemId);
+
+        let totalTime = 0;
+        
+        if (defaultData) {
+            Object.keys(defaultData).forEach( state =>{
+                totalTime += defaultData[state]
+            })
+
+        } else if (initialData && initialData.value) {
+            try {
+                const parsedData = JSON.parse(initialData.value);
+                defaultData = parsedData[dataitemId] || {
+                    'OFF': 100,
+                    'ON': 1,
+                    'UNAVAILABLE': 1
+                };
+                Object.keys(defaultData).forEach( state =>{
+                    totalTime += analyticsData[state]
+                })
+
+                saveChartData(dataitemId, defaultData);
+            } catch (e) {
+                console.error('Error parsing initial data:', e);
+                defaultData = {
+                    'OFF': 100,
+                    'ON': 1,
+                    'UNAVAILABLE': 1
+                }
+                totalTime = 102
+            }
+        } else {
             defaultData = {
                 'OFF': 100,
                 'ON': 1,
@@ -71,7 +133,6 @@ function initializeDefaultCharts() {
         
         const labels = ['ON', 'OFF', 'UNAVAILABLE'];
        
-        
         const percentages = [];
         Object.values(defaultData).forEach(value => {
             percentages.push((value / totalTime) * 100);
@@ -79,10 +140,31 @@ function initializeDefaultCharts() {
         
         createPieChart(dataitemId, totalTime, percentages, defaultData, labels);
     });
+
+    const storedStates = getStoredDeviceStates();
+    Object.entries(storedStates).forEach(([id, value]) => {
+        const valueElem = document.getElementById(id);
+        if (valueElem) {
+            if (id.includes('Tool')) {
+                valueElem.style.color = (value === "ON" ? "#6ed43f" : "red");
+                if (valueElem.parentElement) {
+                    valueElem.parentElement.style.border = (value === "ON" ? "2px solid #6ed43f" : "2px solid red");
+                }
+            }
+            if (id.includes('Gate')) {
+                valueElem.src = (value === "OPEN" ? "../static/icons/blast-gate-open.png" : "../static/icons/blast-gate-closed.png");
+            }
+        }
+    });
 }
 
-const device_uuid = document.querySelector('meta[name="device-uuid"]').getAttribute('content')
-if(device_uuid){
+let device_uuid;
+const metaElement = document.querySelector('meta[name="device-uuid"]');
+if (metaElement) {
+    device_uuid = metaElement.getAttribute('content');
+}
+
+if (device_uuid) {
     const wsl_url = `ws://localhost:8000/devices/${device_uuid}/ws`
     const socket = new WebSocket(wsl_url)
 
@@ -97,7 +179,13 @@ if(device_uuid){
         if (data.event === "device_change" && data.data) {
             const id = data.data.id;
             const value = data.data.value;
+            
             updateDeviceChart(data.data.id, data.data.durations)
+            saveChartData(data.data.id, data.data.durations);
+            
+            const currentStates = getStoredDeviceStates();
+            currentStates[id] = value;
+            saveDeviceStates(currentStates);
 
             const valueElem = document.getElementById(id);
             if (valueElem) {
@@ -105,7 +193,9 @@ if(device_uuid){
                 if (id.includes('Tool'))
                 {
                     valueElem.style.color = (value === "ON"? "#6ed43f" : "red")
-                    valueElem.parentElement.style.border = (value === "ON"? "2px solid #6ed43f" : "2px solid red")
+                    if (valueElem.parentElement) {
+                        valueElem.parentElement.style.border = (value === "ON"? "2px solid #6ed43f" : "2px solid red")
+                    }
                 }
 
                 if (id.includes('Gate')){
@@ -115,6 +205,8 @@ if(device_uuid){
         }
 
         if (data.event === "connection_established" && data.data_items) {
+            saveDeviceStates(data.data_items);
+            
             Object.entries(data.data_items).forEach(([id, value]) => {
                 const valueElem = document.getElementById(id);
                 
@@ -122,7 +214,9 @@ if(device_uuid){
                     if (id.includes('Tool'))
                     {
                         valueElem.style.color = (value === "ON"? "#6ed43f" : "red")
-                        valueElem.parentElement.style.border = (value === "ON"? "2px solid #6ed43f" : "2px solid red")
+                        if (valueElem.parentElement) {
+                            valueElem.parentElement.style.border = (value === "ON"? "2px solid #6ed43f" : "2px solid red")
+                        }
                     }
 
                     if (id.includes('Gate'))
@@ -181,53 +275,32 @@ function createPieChart(dataitem_id, total, percentages, data, labels) {
             svg.appendChild(path);
             
             currentAngle = endAngle;
+        });
 
-            powerDurationText = document.getElementById(`${dataitem_id}-power-duration`)
-            if ((total/60).toFixed(2) > 2){
-                powerDurationText.innerText = `Total powered duration: ${(total/60).toFixed(2)} minutes`
+        const powerDurationText = document.getElementById(`${dataitem_id}-power-duration`);
+        if (powerDurationText) {
+            if ((total/60).toFixed(2) > 2) {
+                powerDurationText.innerText = `Total powered duration: ${(total/60).toFixed(2)} minutes`;
             } else {
-                powerDurationText.innerText = `Total powered duration: NA minutes`
+                powerDurationText.innerText = `Total powered duration: NA minutes`;
             }
-            
-        });
-        
-        addHoverEffects(svg);
+        }
     }
-    
-}
-
-function addHoverEffects(svg) {
-    const tooltip = document.getElementById('tooltip');
-    const slices = svg.querySelectorAll('.pie-slice');
-    
-    slices.forEach(slice => {
-        slice.addEventListener('mouseenter', (e) => {
-            const label = e.target.getAttribute('data-label');
-            const value = e.target.getAttribute('data-value');
-            tooltip.innerHTML = `${label}: ${value}`;
-            tooltip.style.opacity = '1';
-        });
-        
-        slice.addEventListener('mousemove', (e) => {
-            tooltip.style.left = e.pageX + 10 + 'px';
-            tooltip.style.top = e.pageY - 10 + 'px';
-        });
-        
-        slice.addEventListener('mouseleave', () => {
-            tooltip.style.opacity = '0';
-        });
-    });
 }
 
 function updateDeviceChart(dataitem_id, analyticsData) {
     const labels = ['ON', 'OFF', 'UNAVAILABLE']
-    const totalTime = analyticsData['ON'] + analyticsData['OFF'] + analyticsData['UNAVAILABLE']
+    let totalTime = 0
 
     const percentages = []
     Object.keys(analyticsData).forEach( state =>{
+        totalTime += analyticsData[state]
         percentages.push(analyticsData[state]/totalTime * 100)
     })
     console.log(percentages)
+    console.log(totalTime)
 
+    saveChartData(dataitem_id, analyticsData);
+    
     createPieChart(dataitem_id, totalTime, percentages, analyticsData, labels);
 }
