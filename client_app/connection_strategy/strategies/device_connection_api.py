@@ -1,48 +1,46 @@
 from typing import Dict, List
 import httpx
+from ..interfaces.device_connection_strategy import IDeviceConnectionStrategy
 
 
-class DeviceConnectionManager:
+class DeviceConnectionAPI(IDeviceConnectionStrategy):
     """Manages device info connection."""
 
     def __init__(self, api_base_url: str):
         self.api_base_url: str = api_base_url
-        self.devices: List[Dict[str, any]] = []
-        self.device_dataitems: Dict[str, List[Dict[str, any]]] = {}
-        self.device_dataitems_stats: Dict[str, any] = {}
 
-    async def fetch_devices(self) -> None:
+    async def fetch_devices(self) -> List[Dict[str, any]]:
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.get(f"{self.api_base_url}/devices")
                 resp.raise_for_status()
-                self.devices = resp.json().get("devices", [])
+                devices = resp.json().get("devices", [])
+                return devices
         except Exception as e:
             print(f"Error fetching devices: {str(e)}")
-            self.devices = []
+            return []
     
-    async def fetch_device_dataitems(self, device_uuid: str) -> None:
+    async def fetch_device_dataitems(self, device_uuid: str) -> List[Dict[str, any]]:
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.get(f"{self.api_base_url}/devices/{device_uuid}/dataitems")
                 resp.raise_for_status()
-                self.device_dataitems[device_uuid] = self.format_device_data(resp.json())
-
+                return self.format_device_data(resp.json())
         except Exception as e:
             print(f"Error fetching dataitems for {device_uuid}: {str(e)}")
-            self.device_dataitems[device_uuid] = []
+            return []
     
-    async def fetch_dataitem_stats(self, device_uuid: str, dataitem_id: str) -> None:
+    async def fetch_dataitem_stats(self, device_uuid: str, dataitem_id: str) -> Dict[str, any]:
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.get(f"{self.api_base_url}/devices/{device_uuid}/dataitems/{dataitem_id}")
                 resp.raise_for_status()
-                self.device_dataitems_stats[dataitem_id] = resp.json()
-
+                return resp.json()
         except Exception as e:
             print(f"Error fetching stats for {dataitem_id}: {str(e)}")
+            return {}
 
-    async def set_simulation_mode(self, simulation_mode: bool) -> None:
+    async def set_simulation_mode(self, simulation_mode: bool) -> Dict[str, any]:
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
@@ -59,10 +57,26 @@ class DeviceConnectionManager:
     def format_device_data(self, device_data: dict) -> List[Dict[str, any]]:
         device_dataitems = []
         for id, value in device_data.get('data_items', {}).items():
-                if 'Tool' in id:
-                    device_dataitems.append({'id': id, 'value': value, 'type': 'tool'})
-                elif 'Gate' in id:
-                    device_dataitems.append({'id': id, 'value': value, 'type': 'gate'})
-                elif '':
-                    device_dataitems.append({'id': id, 'value': value, 'type': 'condition'})
+            if 'Tool' in id:
+                device_dataitems.append({'id': id, 'value': value, 'type': 'tool'})
+            elif 'Gate' in id:
+                device_dataitems.append({'id': id, 'value': value, 'type': 'gate'})
+            else:  # Fixed the empty condition check
+                device_dataitems.append({'id': id, 'value': value, 'type': 'condition'})
         return device_dataitems
+    
+    def supports_native_websocket(self) -> bool:
+        """OpenFactory supports native WebSocket connections"""
+        return True
+    
+    def get_websocket_url(self, device_uuid: str) -> str:
+        """Return the OpenFactory WebSocket URL"""
+        return f"ws://localhost:8000/devices/{device_uuid}/ws"
+    
+    async def start_realtime_updates(self, device_uuid: str):
+        """For OpenFactory, we can connect to their WebSocket directly"""
+        pass
+    
+    async def stop_realtime_updates(self, device_uuid: str):
+        """Stop OpenFactory WebSocket connection"""
+        pass
