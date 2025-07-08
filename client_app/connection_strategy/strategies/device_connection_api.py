@@ -74,7 +74,6 @@ class DeviceConnectionAPI(IDeviceConnectionStrategy):
         return f"ws://localhost:8000/devices/{device_uuid}/ws"
     
     async def start_realtime_updates(self, device_uuid: str):
-        """For OpenFactory, we can connect to their WebSocket directly"""
         pass
     
     async def stop_realtime_updates(self, device_uuid: str):

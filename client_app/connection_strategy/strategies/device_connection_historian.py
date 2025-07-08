@@ -25,6 +25,5 @@ class DeviceConnectionHistorian(IDeviceConnectionStrategy):
         pass
 
     def supports_native_websocket(self) -> bool:
-        """Historian doesn't support native WebSocket - uses polling"""
         return False
 
