@@ -3,6 +3,7 @@ from collections import defaultdict
 import json
 import threading
 from typing import List, Dict, Set
+from fastapi.concurrency import asynccontextmanager
 from pydantic import BaseModel
 import uvicorn
 import time
@@ -126,7 +127,7 @@ class OpenFactoryAPI(OpenFactoryApp):
                         ksqlClient=ksqlClient,
                         bootstrap_servers=bootstrap_servers
                     )
-                    self.devices_assets[device_uuid].subscribe_to_events(
+                    self.devices_assets[device_uuid].subscribe_to_events( ## TODO subscribe au stream derive (les assets temps réel seuleemnt)
                         self.on_event, 
                         f'api_events_group_{device_uuid}'
                     )
@@ -242,7 +243,7 @@ class OpenFactoryAPI(OpenFactoryApp):
 
     def get_device_dataitems(self, device_uuid: str) -> dict:
         try:
-            query = f"SELECT ID, VALUE FROM assets WHERE ASSET_UUID = '{device_uuid}' AND TYPE IN ('Events', 'Condition') AND VALUE != 'UNAVAILABLE';"
+            query = f"SELECT ID, VALUE FROM assets WHERE ASSET_UUID = '{device_uuid}' AND TYPE IN ('Events', 'Condition') AND VALUE != 'UNAVAILABLE';"##doit tout lire les events donc inefficace
             df = self.ksqlClient.query(query)
             return dict(zip(df.ID.tolist(), df.VALUE.tolist())) if 'ID' in df.columns and 'VALUE' in df.columns else {}
         except Exception as e:
@@ -263,8 +264,6 @@ class OpenFactoryAPI(OpenFactoryApp):
         try:
             print(f"Received message from {device_uuid}: {message}")
 
-            if message.get("type") == "pong":
-                pass
         except Exception as e:
             print(f"Error handling client message: {e}")
 
@@ -324,14 +323,14 @@ def run_websocket_api():
         ksqlClient=KSQLDBClient("http://ksqldb-server:8088"),
         bootstrap_servers="broker:29092"
     )
-    
-    @app_instance.app.on_event("startup")
-    async def startup():
+
+    @asynccontextmanager
+    async def lifespan(app):
         await startup_event(app_instance)
-    
-    @app_instance.app.on_event("shutdown")
-    async def shutdown():
+        yield
         await app_instance.app_event_loop_stopped()
+
+    app_instance.app.router.lifespan_context = lifespan
     
     def start_openfactory():
         try:
