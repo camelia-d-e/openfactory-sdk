@@ -44,6 +44,7 @@ document.addEventListener("DOMContentLoaded", function() {
     })
 
     initializeDefaultCharts();
+    restoreSimulationMode();
 })
 
 function saveChartData(dataitemId, data) {
@@ -158,11 +159,8 @@ function initializeDefaultCharts() {
     });
 }
 
-let device_uuid;
 const metaElement = document.querySelector('meta[name="device-uuid"]');
-if (metaElement) {
-    device_uuid = metaElement.getAttribute('content');
-}
+const device_uuid = metaElement ? metaElement.getAttribute('content') : null;
 
 if (device_uuid) {
     const wsl_url = `ws://localhost:8000/devices/${device_uuid}/ws`
@@ -179,6 +177,7 @@ if (device_uuid) {
         if (data.event === "device_change" && data.data) {
             const id = data.data.id;
             const value = data.data.value;
+            console.log(data.data.durations)
             
             updateDeviceChart(data.data.id, data.data.durations)
             saveChartData(data.data.id, data.data.durations);
@@ -297,10 +296,64 @@ function updateDeviceChart(dataitem_id, analyticsData) {
         totalTime += analyticsData[state]
         percentages.push(analyticsData[state]/totalTime * 100)
     })
-    console.log(percentages)
-    console.log(totalTime)
 
     saveChartData(dataitem_id, analyticsData);
     
     createPieChart(dataitem_id, totalTime, percentages, analyticsData, labels);
+}
+
+function saveSimulationMode(enabled) {
+    try {
+        localStorage.setItem('simulationMode', JSON.stringify(enabled));
+    } catch (e) {
+        console.error('Error saving simulation mode:', e);
+    }
+}
+
+function getStoredSimulationMode() {
+    try {
+        const stored = localStorage.getItem('simulationMode');
+        if (stored === null) return false;
+        return JSON.parse(stored);
+    } catch (e) {
+        console.error('Error retrieving simulation mode:', e);
+        return false;
+    }
+}
+
+function restoreSimulationMode() {
+    const checkbox = document.querySelector('.switch input[type="checkbox"]');
+    if (checkbox) {
+        const stored = getStoredSimulationMode();
+        checkbox.checked = !!stored;
+    }
+}
+
+async function sendSimulationMode() {
+    const checkbox = document.querySelector('.switch input[type="checkbox"]');
+    const simulationMode = checkbox.checked;
+    saveSimulationMode(simulationMode);
+
+    try {
+        const response = await fetch('/simulation-mode', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ enabled: simulationMode })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update simulation mode');
+        }
+
+        const result = await response.json();
+        console.log('Simulation mode updated:', result);
+
+    } catch (error) {
+        console.error('Error updating simulation mode:', error);
+        checkbox.checked = !simulationMode;
+        saveSimulationMode(checkbox.checked);
+        alert('Failed to update simulation mode. Please try again.');
+    }
 }
