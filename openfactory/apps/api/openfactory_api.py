@@ -1,22 +1,25 @@
 import asyncio
-from collections import defaultdict
 import json
 import threading
+import time
+from collections import defaultdict
+from queue import Queue
 from typing import List, Dict, Set
+
+from fastapi import APIRouter, FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.concurrency import asynccontextmanager
+from fastapi.websockets import WebSocketState
 from pydantic import BaseModel
 import uvicorn
-import time
-from fastapi import APIRouter, FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.websockets import WebSocketState
-from queue import Queue
+
 from openfactory.apps import OpenFactoryApp
 from openfactory.kafka import KSQLDBClient
 from openfactory.assets import Asset
 
+
 class Command(BaseModel):
     name: str
-    args:  str | bool | None
+    args: str | bool | None
 
 
 class ConnectionManager:
@@ -32,7 +35,6 @@ class ConnectionManager:
             self.active_connections[device_uuid].add(websocket)
             self.connection_device_map[websocket] = device_uuid
             self.outgoing_queues[websocket] = asyncio.Queue()
-        print(f"Client connected to device {device_uuid}. Total connections: {len(self.active_connections[device_uuid])}")
 
     async def disconnect(self, websocket: WebSocket):
         async with self._lock:
@@ -42,7 +44,6 @@ class ConnectionManager:
                 del self.connection_device_map[websocket]
                 if websocket in self.outgoing_queues:
                     del self.outgoing_queues[websocket]
-                print(f"Client disconnected from device {device_uuid}. Remaining connections: {len(self.active_connections[device_uuid])}")
 
     async def send_to_device_connections(self, device_uuid: str, message: dict):
         if device_uuid in self.active_connections:
@@ -58,6 +59,7 @@ class ConnectionManager:
 
     def get_device_connection_count(self, device_uuid: str) -> int:
         return len(self.active_connections[device_uuid])
+
 
 class OpenFactoryAPI(OpenFactoryApp):
     def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel='INFO'):
@@ -104,22 +106,24 @@ class OpenFactoryAPI(OpenFactoryApp):
                 "device_uuid": device_uuid,
                 "data_items": self.get_device_dataitems(device_uuid),
             }
-        
+
         @self.router.get("/devices/{device_uuid}/dataitems/{dataitem_id}")
-        async def get_device_dataitems_stats(device_uuid:str, dataitem_id: str):
+        async def get_device_dataitems_stats(device_uuid: str, dataitem_id: str):
             result = self.get_dataitem_stats(dataitem_id)
             print(result)
             return result
-        
+
         @self.router.post("/simulation-mode")
         async def set_simulation_mode(simulation_mode: Command):
             self.method(simulation_mode.name, str(simulation_mode.args).lower())
-            print(f'Sent to CMD_STREAM: SimulationMode with value {str(simulation_mode.args).lower()}')
+            print(
+                f'Sent to CMD_STREAM: SimulationMode with value {str(simulation_mode.args).lower()}'
+            )
 
         @self.router.websocket("/devices/{device_uuid}/ws")
         async def websocket_device_stream(websocket: WebSocket, device_uuid: str):
             await self.connection_manager.connect(websocket, device_uuid)
-            
+
             if device_uuid not in self.devices_assets:
                 try:
                     self.devices_assets[device_uuid] = Asset(
@@ -127,14 +131,14 @@ class OpenFactoryAPI(OpenFactoryApp):
                         ksqlClient=ksqlClient,
                         bootstrap_servers=bootstrap_servers
                     )
-                    self.devices_assets[device_uuid].subscribe_to_events( ## TODO subscribe au stream derive (les assets temps réel seuleemnt)
-                        self.on_event, 
+                    self.devices_assets[device_uuid].subscribe_to_events(
+                        self.on_event,
                         f'api_events_group_{device_uuid}'
                     )
                     print(f"Initialized asset subscription for device: {device_uuid}")
                 except Exception as e:
                     print(f"Error initializing asset for {device_uuid}: {e}")
-            
+
             try:
                 initial_data = {
                     "event": "connection_established",
@@ -149,7 +153,7 @@ class OpenFactoryAPI(OpenFactoryApp):
                     """Handle outgoing messages to client"""
                     if websocket not in self.connection_manager.outgoing_queues:
                         return
-                    
+
                     queue = self.connection_manager.outgoing_queues[websocket]
                     try:
                         while websocket.client_state == WebSocketState.CONNECTED:
@@ -203,7 +207,7 @@ class OpenFactoryAPI(OpenFactoryApp):
                     receiver(),
                     return_exceptions=True
                 )
-                    
+
             except Exception as e:
                 print(f"WebSocket handler error: {e}")
             finally:
@@ -224,12 +228,12 @@ class OpenFactoryAPI(OpenFactoryApp):
                                 "data": dict(change)
                             }
                             await self.connection_manager.send_to_device_connections(device_uuid, message)
-                    
+
                     await asyncio.sleep(0.1)
                 except Exception as e:
                     print(f"Error in background event processing: {e}")
                     await asyncio.sleep(1)
-        
+
         self.event_processing_task = asyncio.create_task(process_device_events())
 
     def get_all_devices(self) -> List[str]:
@@ -243,27 +247,32 @@ class OpenFactoryAPI(OpenFactoryApp):
 
     def get_device_dataitems(self, device_uuid: str) -> dict:
         try:
-            query = f"SELECT ID, VALUE FROM assets WHERE ASSET_UUID = '{device_uuid}' AND TYPE IN ('Events', 'Condition') AND VALUE != 'UNAVAILABLE';"##doit tout lire les events donc inefficace
+            query = (
+                f"SELECT ID, VALUE FROM assets WHERE ASSET_UUID = '{device_uuid}' "
+                f"AND TYPE IN ('Events', 'Condition') AND VALUE != 'UNAVAILABLE';"
+            )
             df = self.ksqlClient.query(query)
             return dict(zip(df.ID.tolist(), df.VALUE.tolist())) if 'ID' in df.columns and 'VALUE' in df.columns else {}
         except Exception as e:
             print(f"Error getting device dataitems for {device_uuid}: {e}")
             return {}
-        
+
     def get_dataitem_stats(self, dataitem_id) -> dict:
         try:
-            query = f"SELECT IVAC_POWER_KEY, TOTAL_DURATION_SEC FROM IVAC_POWER_STATE_TOTALS WHERE IVAC_POWER_KEY LIKE '{dataitem_id}%' ;"
+            query = (
+                f"SELECT IVAC_POWER_KEY, TOTAL_DURATION_SEC FROM IVAC_POWER_STATE_TOTALS "
+                f"WHERE IVAC_POWER_KEY LIKE '{dataitem_id}%';"
+            )
             df = self.ksqlClient.query(query)
             return dict(zip(df.IVAC_POWER_KEY.str[11:].tolist(), df.TOTAL_DURATION_SEC.tolist())) if 'IVAC_POWER_KEY' in df.columns and 'TOTAL_DURATION_SEC' in df.columns else {}
-        except Exception as e:
-            print(f"Error getting dataitems stats")
+        except Exception:
+            print("Error getting dataitems stats")
             return {}
 
     async def handle_client_message(self, device_uuid: str, message: dict):
         """Handle messages received from WebSocket clients"""
         try:
             print(f"Received message from {device_uuid}: {message}")
-
         except Exception as e:
             print(f"Error handling client message: {e}")
 
@@ -277,21 +286,24 @@ class OpenFactoryAPI(OpenFactoryApp):
             print(f"Error processing device event: {e}")
 
     def add_duration_updates(self, msg_value):
-        query = f"SELECT IVAC_POWER_KEY, TOTAL_DURATION_SEC FROM IVAC_POWER_STATE_TOTALS WHERE IVAC_POWER_KEY LIKE '{msg_value['id']}%';"
+        query = (
+            f"SELECT IVAC_POWER_KEY, TOTAL_DURATION_SEC FROM IVAC_POWER_STATE_TOTALS "
+            f"WHERE IVAC_POWER_KEY LIKE '{msg_value['id']}%';"
+        )
         df = self.ksqlClient.query(query)
         msg_value['durations'] = dict(zip(df.IVAC_POWER_KEY.str[11:].tolist(), df.TOTAL_DURATION_SEC.tolist())) if 'IVAC_POWER_KEY' in df.columns and 'TOTAL_DURATION_SEC' in df.columns else {}
 
     async def app_event_loop_stopped(self) -> None:
         print("Stopping API consumer thread...")
         self.running = False
-        
+
         if self.event_processing_task and not self.event_processing_task.done():
             self.event_processing_task.cancel()
             try:
                 await self.event_processing_task
             except asyncio.CancelledError:
                 pass
-        
+
         for device_uuid, asset in self.devices_assets.items():
             try:
                 asset.stop_events_subscription()
@@ -303,19 +315,26 @@ class OpenFactoryAPI(OpenFactoryApp):
         print("Starting OpenFactory WebSocket API main loop...")
         while self.running:
             try:
-                total_connections = sum(len(connections) for connections in self.connection_manager.active_connections.values())
+                total_connections = sum(
+                    len(connections) for connections in self.connection_manager.active_connections.values()
+                )
                 if total_connections > 0:
-                    print(f"Active WebSocket connections: {total_connections} across {len(self.connection_manager.active_connections)} devices")
+                    print(
+                        f"Active WebSocket connections: {total_connections} "
+                        f"across {len(self.connection_manager.active_connections)} devices"
+                    )
                 time.sleep(30)
             except KeyboardInterrupt:
                 print("Shutting down WebSocket API...")
                 self.running = False
                 break
 
+
 async def startup_event(app_instance):
     """Initialize async components when the FastAPI app starts"""
     app_instance.loop = asyncio.get_event_loop()
     await app_instance.setup_background_tasks()
+
 
 def run_websocket_api():
     app_instance = OpenFactoryAPI(
@@ -331,25 +350,25 @@ def run_websocket_api():
         await app_instance.app_event_loop_stopped()
 
     app_instance.app.router.lifespan_context = lifespan
-    
+
     def start_openfactory():
         try:
             app_instance.run()
         except Exception as e:
             print(f"Error in OpenFactory thread: {e}")
-    
+
     openfactory_thread = threading.Thread(target=start_openfactory, daemon=True)
     openfactory_thread.start()
     time.sleep(3)
-    
+
     print("Starting WebSocket API server on 0.0.0.0:8000")
     print("WebSocket endpoint: ws://localhost:8000/devices/{device_uuid}/ws")
-    
+
     try:
         uvicorn.run(
-            app_instance.app, 
-            host="0.0.0.0", 
-            port=8000, 
+            app_instance.app,
+            host="0.0.0.0",
+            port=8000,
             log_level="info",
             ws_ping_interval=30,
             ws_ping_timeout=10
@@ -357,6 +376,7 @@ def run_websocket_api():
     except Exception as e:
         print(f"Error starting WebSocket API server: {e}")
         app_instance.running = False
+
 
 if __name__ == "__main__":
     run_websocket_api()
