@@ -1,119 +1,134 @@
 import os
+import json
+import uvicorn
+import websockets
 from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
-from connection_strategy.context.device_connection_manager import DeviceConnectionManager
-from connection_strategy_factory import ConnectionStrategyFactory
-from typing import Dict, Any
+from typing import Dict, List, Any
+import asyncio
 
-CONNECTION_TYPE = os.getenv("CONNECTION_TYPE", "api")
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
-
+API_BASE_URL = os.getenv("API_BASE_URL", "ws://ofa-api:8000")
 templates = Jinja2Templates(directory="templates")
 
+class OpenFactoryWebSocketClient:
+    def __init__(self, base_url: str = "ws://ofa-api:8000"):
+        self.base_url = base_url
+        self.devices: Dict[str, Dict[str, Any]] = {}
 
-def get_connection_config():
-    """Get connection configuration based on environment variables"""
-    if CONNECTION_TYPE == "api":
-        return {'api_base_url': API_BASE_URL}
-    elif CONNECTION_TYPE == "historian":
-        return {
-            'server_url': os.getenv("HISTORIAN_SERVER_URL", "http://historian.company.com"),
-            'username': os.getenv("HISTORIAN_USERNAME", ""),
-            'password': os.getenv("HISTORIAN_PASSWORD", ""),
-            'connection_string': os.getenv("HISTORIAN_CONNECTION_STRING", ""),
-            'database': os.getenv("HISTORIAN_DATABASE", "production")
-        }
-    else:
-        return {'api_base_url': API_BASE_URL}
-
+    async def connect_to_devices_list(self):
+        """Connect to the main devices list endpoint"""
+        async with websockets.connect(f"{self.base_url}/ws/devices") as ws:
+            message = await ws.recv()
+            data = json.loads(message)
+            
+            if data.get("event") == "devices_list":
+                for device in data.get("devices", []):
+                    self.devices[device["device_uuid"]] = {
+                        "device_uuid": device["device_uuid"],
+                        "dataitems": self.format_device_data(device.get("dataitems", {})),
+                        "stats": device.get("durations", {})
+                    }
+                print(f"Got initial device list: {len(self.devices)} device(s)")
+            return self.devices
+    
+    def format_device_data(self, device_data: dict) -> List[Dict[str, any]]:
+        device_dataitems = []
+        for id, value in device_data.items():
+            if 'Tool' in id:
+                device_dataitems.append({'id': id, 'value': value, 'type': 'tool'})
+            elif 'Gate' in id:
+                device_dataitems.append({'id': id, 'value': value, 'type': 'gate'})
+            else:
+                device_dataitems.append({'id': id, 'value': value, 'type': 'condition'})
+        return device_dataitems
 
 class OpenFactoryClientApp:
-    """Client app for openfactory API with strategy pattern support"""
-
-    def __init__(self, strategy_type: str = 'api', config: Dict[str, Any] = None):
-        if config is None:
-            config = {'api_base_url': API_BASE_URL}
-
-        strategy = ConnectionStrategyFactory.create_strategy(strategy_type, config)
-        self.device_manager = DeviceConnectionManager(strategy)
-        self.config = config
-
+    def __init__(self, websocket_base_url: str = "ws://ofa-api:8000"):
+        self.client = OpenFactoryWebSocketClient(websocket_base_url)
+        self._startup_complete = False
+    
     async def startup_event(self):
-        await self.device_manager.fetch_devices()
-        for device in self.device_manager.devices:
-            uuid = device['device_uuid']
-            await self.device_manager.fetch_device_dataitems(uuid)
-
-        for device in self.device_manager.devices:
-            for device_uuid, dataitems in self.device_manager.device_dataitems.items():
-                for dataitem in dataitems:
-                    await self.device_manager.fetch_dataitem_stats(device_uuid, dataitem['id'])
-
-    async def index(self, request: Request):
-        return templates.TemplateResponse(
-            "index.html",
-            {
-                "request": request,
-                "devices": self.device_manager.devices,
-                "device": self.device_manager.device_dataitems
-            }
-        )
-
+        """Initialize the app by fetching devices and their data"""
+        if self._startup_complete:
+            return
+            
+        print("Starting OpenFactory client initialization...")
+        try:
+            await self.client.connect_to_devices_list()
+            self._startup_complete = True
+            print("OpenFactory client initialization complete!")
+        except Exception as e:
+            print(f"Error during startup: {e}")
+            raise
+    
+    async def stream_device_updates(self, device_uuid: str):
+        """Stream updates to frontend"""
+        async with websockets.connect(f"{API_BASE_URL}/ws/devices/{device_uuid}") as ws:
+            while True:
+                try:
+                    data = await ws.recv()
+                    yield f"data: {data}\n\n"
+                except websockets.exceptions.ConnectionClosed:
+                    print("WebSocket connection closed, reconnecting...")
+                    await asyncio.sleep(1)
+                    break
+    
     async def device_detail(self, request: Request, device_uuid: str):
-        dataitems = self.device_manager.device_dataitems.get(device_uuid, {})
+        """Render device detail page with SSE endpoint"""
+        if not self._startup_complete:
+            await self.startup_event()
+        
+        if device_uuid not in self.client.devices:
+            raise HTTPException(status_code=404, detail="Device not found")
+        
         return templates.TemplateResponse(
             "index.html",
             {
                 "request": request,
-                "devices": self.device_manager.devices,
+                "devices": list(self.client.devices.keys()),
                 "device_uuid": device_uuid,
-                "device_dataitems": dataitems
+                "device_dataitems": self.client.devices[device_uuid].get("dataitems", []),
+                "dataitems_stats": self.client.devices[device_uuid].get("stats", []),
             }
         )
 
-    async def set_simulation_mode(self, simulation_mode: bool):
-        return await self.device_manager.set_simulation_mode(simulation_mode)
-
-
-config = get_connection_config()
-ofc_app = OpenFactoryClientApp(CONNECTION_TYPE, config)
-
+ofc_app = OpenFactoryClientApp(API_BASE_URL)
 
 @asynccontextmanager
-async def lifespan(app):
+async def lifespan(app: FastAPI):
     await ofc_app.startup_event()
     yield
-
 
 app = FastAPI(title="OpenFactory Client App", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return await ofc_app.index(request)
-
+    if not ofc_app._startup_complete:
+        await ofc_app.startup_event()
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "devices": list(ofc_app.client.devices.keys()),
+            "device": {}
+        }
+    )
 
 @app.get("/devices/{device_uuid}", response_class=HTMLResponse)
 async def device_detail(request: Request, device_uuid: str):
     return await ofc_app.device_detail(request, device_uuid)
 
-
-@app.post("/simulation-mode")
-async def set_simulation_mode(request: Request):
-    data = await request.json()
-    simulation_mode = data.get("enabled", False)
-    return await ofc_app.set_simulation_mode(simulation_mode)
-
+@app.get("/updates/{device_uuid}")
+async def stream_updates(device_uuid: str):
+    """SSE endpoint for real-time updates"""
+    return StreamingResponse(
+        ofc_app.stream_device_updates(device_uuid),
+        media_type="text/event-stream",
+    )
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "app:app",
-        host="0.0.0.0",
-        port=3000,
-        reload=True
-    )
+    uvicorn.run("app:app", host="0.0.0.0", port=3000, reload=True)

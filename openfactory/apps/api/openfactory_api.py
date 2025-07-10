@@ -1,42 +1,37 @@
 import asyncio
 import json
-import threading
 import time
+import threading
 from collections import defaultdict
 from queue import Queue
 from typing import List, Dict, Set
 
-from fastapi import APIRouter, FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.concurrency import asynccontextmanager
-from fastapi.websockets import WebSocketState
-from pydantic import BaseModel
-import uvicorn
+import websockets
+from websockets.exceptions import ConnectionClosed
 
 from openfactory.apps import OpenFactoryApp
 from openfactory.kafka import KSQLDBClient
 from openfactory.assets import Asset
 
-
-class Command(BaseModel):
-    name: str
-    args: str | bool | None
-
+class Command:
+    def __init__(self, name: str, args):
+        self.name = name
+        self.args = args
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: Dict[str, Set[WebSocket]] = defaultdict(set)
-        self.connection_device_map: Dict[WebSocket, str] = {}
-        self.outgoing_queues: Dict[WebSocket, asyncio.Queue] = {}
+        self.active_connections: Dict[str, Set[websockets.WebSocketServerProtocol]] = defaultdict(set)
+        self.connection_device_map: Dict[websockets.WebSocketServerProtocol, str] = {}
+        self.outgoing_queues: Dict[websockets.WebSocketServerProtocol, asyncio.Queue] = {}
         self._lock = asyncio.Lock()
 
-    async def connect(self, websocket: WebSocket, device_uuid: str):
-        await websocket.accept()
+    async def connect(self, websocket, device_uuid: str):
         async with self._lock:
             self.active_connections[device_uuid].add(websocket)
             self.connection_device_map[websocket] = device_uuid
             self.outgoing_queues[websocket] = asyncio.Queue()
 
-    async def disconnect(self, websocket: WebSocket):
+    async def disconnect(self, websocket):
         async with self._lock:
             if websocket in self.connection_device_map:
                 device_uuid = self.connection_device_map[websocket]
@@ -52,6 +47,7 @@ class ConnectionManager:
                 if connection in self.outgoing_queues:
                     queue = self.outgoing_queues[connection]
                     try:
+                        print(f"Queuing message for connection {connection} on device {device_uuid}: {message}")
                         await queue.put(json.dumps(message))
                     except Exception as e:
                         print(f"Error queuing message for connection: {e}")
@@ -60,158 +56,119 @@ class ConnectionManager:
     def get_device_connection_count(self, device_uuid: str) -> int:
         return len(self.active_connections[device_uuid])
 
-
 class OpenFactoryAPI(OpenFactoryApp):
     def __init__(self, app_uuid, ksqlClient, bootstrap_servers, loglevel='INFO'):
         super().__init__(app_uuid, ksqlClient, bootstrap_servers, loglevel)
-        self.asset_uuid = "IVAC"
+        object.__setattr__(self, 'ASSET_ID', 'IVAC')
         self.device_queues = defaultdict(Queue)
         self.devices_assets = {}
         self.ksqlClient = ksqlClient
         self.connection_manager = ConnectionManager()
-        self.app = FastAPI(title="OpenFactory WebSocket API", version="2.0.0")
-        self.router = APIRouter()
-        self.setup_routes(ksqlClient, bootstrap_servers)
-        self.app.include_router(self.router)
         self.running = True
         self.loop = None
         self.event_processing_task = None
 
-    def setup_routes(self, ksqlClient, bootstrap_servers):
-        @self.router.get("/")
-        async def root():
-            return {
-                "message": "OpenFactory WebSocket API is running",
-                "version": "2.0.0",
-                "websocket_endpoint": "/devices/{device_uuid}/ws",
-            }
+    async def websocket_handler(self, websocket):
+        """Handle incoming WebSocket connections."""
+        path = websocket.request.path
 
-        @self.router.get("/devices")
-        async def list_devices():
-            devices = self.get_all_devices()
-            device_status = []
-            for device_uuid in devices:
-                device_status.append({
-                    "device_uuid": device_uuid,
-                    "connections": self.connection_manager.get_device_connection_count(device_uuid)
-                })
-            return {
-                "devices": device_status,
-                "total_devices": len(devices)
-            }
+        if path == "/ws/devices":
+            await self.handle_devices_list_connection(websocket)
+            return
+        
+        if not path.startswith("/ws/devices/"):
+            await websocket.send(json.dumps({"event": "error", "message": "Invalid endpoint"}))
+            await websocket.close()
+            return
+        
+        device_uuid = path.split("/")[3]
+        print(f"New WebSocket connection for device: {device_uuid}")
 
-        @self.router.get("/devices/{device_uuid}/dataitems")
-        async def get_device_dataitems(device_uuid: str):
-            return {
-                "device_uuid": device_uuid,
-                "data_items": self.get_device_dataitems(device_uuid),
-            }
+        await self.connection_manager.connect(websocket, device_uuid)
 
-        @self.router.get("/devices/{device_uuid}/dataitems/{dataitem_id}")
-        async def get_device_dataitems_stats(device_uuid: str, dataitem_id: str):
-            result = self.get_dataitem_stats(dataitem_id)
-            print(result)
-            return result
-
-        @self.router.post("/simulation-mode")
-        async def set_simulation_mode(simulation_mode: Command):
-            self.method(simulation_mode.name, str(simulation_mode.args).lower())
-            print(
-                f'Sent to CMD_STREAM: SimulationMode with value {str(simulation_mode.args).lower()}'
-            )
-
-        @self.router.websocket("/devices/{device_uuid}/ws")
-        async def websocket_device_stream(websocket: WebSocket, device_uuid: str):
-            await self.connection_manager.connect(websocket, device_uuid)
-
-            if device_uuid not in self.devices_assets:
-                try:
-                    self.devices_assets[device_uuid] = Asset(
-                        device_uuid,
-                        ksqlClient=ksqlClient,
-                        bootstrap_servers=bootstrap_servers
-                    )
-                    self.devices_assets[device_uuid].subscribe_to_events(
-                        self.on_event,
-                        f'api_events_group_{device_uuid}'
-                    )
-                    print(f"Initialized asset subscription for device: {device_uuid}")
-                except Exception as e:
-                    print(f"Error initializing asset for {device_uuid}: {e}")
-
+        if device_uuid not in self.devices_assets:
             try:
-                initial_data = {
-                    "event": "connection_established",
-                    "device_uuid": device_uuid,
-                    "timestamp": time.time(),
-                    "data_items": self.get_device_dataitems(device_uuid),
-                    "connection_count": self.connection_manager.get_device_connection_count(device_uuid)
-                }
-                await websocket.send_text(json.dumps(initial_data))
-
-                async def sender():
-                    """Handle outgoing messages to client"""
-                    if websocket not in self.connection_manager.outgoing_queues:
-                        return
-
-                    queue = self.connection_manager.outgoing_queues[websocket]
-                    try:
-                        while websocket.client_state == WebSocketState.CONNECTED:
-                            try:
-                                msg = await asyncio.wait_for(queue.get(), timeout=1.0)
-                                if websocket.client_state == WebSocketState.CONNECTED:
-                                    await websocket.send_text(msg)
-                            except asyncio.TimeoutError:
-                                if websocket.client_state == WebSocketState.CONNECTED:
-                                    ping_msg = {
-                                        "event": "ping",
-                                        "timestamp": time.time()
-                                    }
-                                    await websocket.send_text(json.dumps(ping_msg))
-                            except Exception as e:
-                                print(f"Error sending message: {e}")
-                                break
-                    except Exception as e:
-                        print(f"Sender coroutine error: {e}")
-
-                async def receiver():
-                    """Handle incoming messages from client"""
-                    try:
-                        while websocket.client_state == WebSocketState.CONNECTED:
-                            try:
-                                message = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
-                                try:
-                                    parsed_message = json.loads(message)
-                                    await self.handle_client_message(device_uuid, parsed_message)
-                                except json.JSONDecodeError as e:
-                                    error_msg = {
-                                        "event": "error",
-                                        "message": f"Invalid JSON: {str(e)}"
-                                    }
-                                    if websocket.client_state == WebSocketState.CONNECTED:
-                                        await websocket.send_text(json.dumps(error_msg))
-                            except asyncio.TimeoutError:
-                                if websocket.client_state != WebSocketState.CONNECTED:
-                                    break
-                            except WebSocketDisconnect:
-                                print("WebSocket disconnected in receiver")
-                                break
-                            except Exception as e:
-                                print(f"Error in receiver: {e}")
-                                break
-                    except Exception as e:
-                        print(f"Receiver coroutine error: {e}")
-
-                await asyncio.gather(
-                    sender(),
-                    receiver(),
-                    return_exceptions=True
+                self.devices_assets[device_uuid] = Asset(
+                    device_uuid,
+                    ksqlClient=self.ksqlClient,
+                    bootstrap_servers="broker:29092"
                 )
-
+                self.devices_assets[device_uuid].subscribe_to_events(
+                    self.on_event,
+                    f'api_events_group_{device_uuid}'
+                )
+                print(f"Initialized asset subscription for device: {device_uuid}")
             except Exception as e:
-                print(f"WebSocket handler error: {e}")
-            finally:
-                await self.connection_manager.disconnect(websocket)
+                print(f"Error initializing asset for {device_uuid}: {e}")
+
+        try:
+            initial_data = {
+                "event": "connection_established",
+                "device_uuid": device_uuid,
+                "timestamp": time.time(),
+                "data_items": self.get_device_dataitems(device_uuid),
+                "connection_count": self.connection_manager.get_device_connection_count(device_uuid)
+            }
+            await websocket.send(json.dumps(initial_data))
+
+            async def sender():
+                """Handle outgoing messages to client"""
+                if websocket not in self.connection_manager.outgoing_queues:
+                    return
+                
+                queue = self.connection_manager.outgoing_queues[websocket]
+                try:
+                    while True:
+                        try:
+                            msg = await asyncio.wait_for(queue.get(), timeout=1.0)
+                            await websocket.send(msg)
+                        except asyncio.TimeoutError:
+                            ping_msg = {
+                                "event": "ping",
+                                "timestamp": time.time()
+                            }
+                            await websocket.send(json.dumps(ping_msg))
+                        except ConnectionClosed:
+                            break
+                        except Exception as e:
+                            print(f"Error sending message: {e}")
+                            break
+                except ConnectionClosed:
+                    pass
+                except Exception as e:
+                    print(f"Sender coroutine error: {e}")
+
+            async def receiver():
+                """Handle incoming messages from client"""
+                try:
+                    while True:
+                        try:
+                            message = await asyncio.wait_for(websocket.recv(), timeout=30.0)
+                            try:
+                                parsed_message = json.loads(message)
+                                await self.handle_client_message(device_uuid, parsed_message, websocket)
+                            except json.JSONDecodeError as e:
+                                error_msg = {
+                                    "event": "error",
+                                    "message": f"Invalid JSON: {str(e)}"
+                                }
+                                await websocket.send(json.dumps(error_msg))
+                        except asyncio.TimeoutError:
+                            continue
+                        except ConnectionClosed:
+                            print("WebSocket disconnected in receiver")
+                            break
+                        except Exception as e:
+                            print(f"Error in receiver: {e}")
+                            break
+                except Exception as e:
+                    print(f"Receiver coroutine error: {e}")
+
+            await asyncio.gather(sender(), receiver(), return_exceptions=True)
+        except Exception as e:
+            print(f"WebSocket handler error: {e}")
+        finally:
+            await self.connection_manager.disconnect(websocket)
 
     async def setup_background_tasks(self):
         """Setup background task for processing device events"""
@@ -228,12 +185,11 @@ class OpenFactoryAPI(OpenFactoryApp):
                                 "data": dict(change)
                             }
                             await self.connection_manager.send_to_device_connections(device_uuid, message)
-
                     await asyncio.sleep(0.1)
                 except Exception as e:
                     print(f"Error in background event processing: {e}")
                     await asyncio.sleep(1)
-
+        
         self.event_processing_task = asyncio.create_task(process_device_events())
 
     def get_all_devices(self) -> List[str]:
@@ -269,12 +225,68 @@ class OpenFactoryAPI(OpenFactoryApp):
             print("Error getting dataitems stats")
             return {}
 
-    async def handle_client_message(self, device_uuid: str, message: dict):
-        """Handle messages received from WebSocket clients"""
+    async def handle_client_message(self, device_uuid: str, message: dict, websocket):
+        """Handle incoming messages from clients."""
+        if not isinstance(message, dict):
+            await websocket.send(json.dumps({"error": "Invalid message format"}))
+            return
+        
         try:
             print(f"Received message from {device_uuid}: {message}")
+            
+            if "method" in message:
+                method = message["method"]
+                params = message.get("params", {})
+                
+                if method == "simulation_mode":
+                    name = params.get("name")
+                    args = params.get("args")
+                    self.method(name, str(args).lower())
+                    print(f'Sent to CMD_STREAM: SimulationMode with value {str(args).lower()}')
+                    await websocket.send(json.dumps({"result": "Simulation mode set"}))
+                
+                else:
+                    await websocket.send(json.dumps({"error": "Unknown method"}))
+        
         except Exception as e:
             print(f"Error handling client message: {e}")
+            await websocket.send(json.dumps({"error": f"Internal server error: {str(e)}"}))
+
+    async def handle_devices_list_connection(self, websocket):
+        """Handle connections to the /ws/devices endpoint"""
+        try:
+            devices = self.get_all_devices()
+            device_list = []
+            for device in devices:
+                device_list.append({
+                    "device_uuid": device,
+                    "dataitems": self.get_device_dataitems(device),
+                    "durations": self.get_dataitem_stats(device),
+                    "connections": self.connection_manager.get_device_connection_count(device)
+                })
+            
+            initial_data = {
+                "event": "devices_list",
+                "timestamp": time.time(),
+                "devices": device_list
+            }
+            await websocket.send(json.dumps(initial_data))
+            
+            while True:
+                try:
+                    await asyncio.sleep(30)
+                    ping_msg = {
+                        "event": "ping",
+                        "timestamp": time.time()
+                    }
+                    await websocket.send(json.dumps(ping_msg))
+                except ConnectionClosed:
+                    break
+                    
+        except Exception as e:
+            print(f"Error in devices list connection: {e}")
+        finally:
+            await websocket.close()
 
     def on_event(self, msg_key: str, msg_value: dict) -> None:
         try:
@@ -296,14 +308,14 @@ class OpenFactoryAPI(OpenFactoryApp):
     async def app_event_loop_stopped(self) -> None:
         print("Stopping API consumer thread...")
         self.running = False
-
+        
         if self.event_processing_task and not self.event_processing_task.done():
             self.event_processing_task.cancel()
             try:
                 await self.event_processing_task
             except asyncio.CancelledError:
                 pass
-
+        
         for device_uuid, asset in self.devices_assets.items():
             try:
                 asset.stop_events_subscription()
@@ -330,26 +342,13 @@ class OpenFactoryAPI(OpenFactoryApp):
                 break
 
 
-async def startup_event(app_instance):
-    """Initialize async components when the FastAPI app starts"""
-    app_instance.loop = asyncio.get_event_loop()
-    await app_instance.setup_background_tasks()
-
-
 def run_websocket_api():
+    """Main function to run the WebSocket API - matching FastAPI version structure"""
     app_instance = OpenFactoryAPI(
         app_uuid='OFA-API',
         ksqlClient=KSQLDBClient("http://ksqldb-server:8088"),
         bootstrap_servers="broker:29092"
     )
-
-    @asynccontextmanager
-    async def lifespan(app):
-        await startup_event(app_instance)
-        yield
-        await app_instance.app_event_loop_stopped()
-
-    app_instance.app.router.lifespan_context = lifespan
 
     def start_openfactory():
         try:
@@ -362,19 +361,30 @@ def run_websocket_api():
     time.sleep(3)
 
     print("Starting WebSocket API server on 0.0.0.0:8000")
-    print("WebSocket endpoint: ws://localhost:8000/devices/{device_uuid}/ws")
+    print("WebSocket endpoint: ws://localhost:8000/ws")
+
+    async def main():
+        await app_instance.setup_background_tasks()
+        
+        try:
+            async with websockets.serve(
+                app_instance.websocket_handler, 
+                "0.0.0.0", 
+                8000,
+                ping_interval=30,
+                ping_timeout=10
+            ):
+                await asyncio.Future()
+        except Exception as e:
+            print(f"Error starting WebSocket server: {e}")
+            app_instance.running = False
+        finally:
+            await app_instance.app_event_loop_stopped()
 
     try:
-        uvicorn.run(
-            app_instance.app,
-            host="0.0.0.0",
-            port=8000,
-            log_level="info",
-            ws_ping_interval=30,
-            ws_ping_timeout=10
-        )
-    except Exception as e:
-        print(f"Error starting WebSocket API server: {e}")
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Shutting down WebSocket API...")
         app_instance.running = False
 
 

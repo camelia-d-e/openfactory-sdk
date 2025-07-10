@@ -45,6 +45,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     initializeDefaultCharts();
     restoreSimulationMode();
+    setupEventSource();
 })
 
 function saveChartData(dataitemId, data) {
@@ -159,78 +160,77 @@ function initializeDefaultCharts() {
     });
 }
 
-const metaElement = document.querySelector('meta[name="device-uuid"]');
-const device_uuid = metaElement ? metaElement.getAttribute('content') : null;
+// const metaElement = document.querySelector('meta[name="device-uuid"]');
+// const device_uuid = metaElement ? metaElement.getAttribute('content') : null;
 
-if (device_uuid) {
-    const wsl_url = `ws://localhost:8000/devices/${device_uuid}/ws`
-    const socket = new WebSocket(wsl_url)
+// if (device_uuid) {
+//     const wsl_url = `ws://localhost:8000/ws/devices/${device_uuid}`
+//     const socket = new WebSocket(wsl_url)
+//     socket.onopen = () => {
+//         console.log("Socket opened")
+//     }
 
-    socket.onopen = () => {
-        console.log("Socket opened")
-    }
-
-    socket.onmessage = (event) => {
+//     socket.onmessage = (event) => {
         
-        const data = JSON.parse(event.data);
+//         const data = JSON.parse(event.data);
 
-        if (data.event === "device_change" && data.data) {
-            const id = data.data.id;
-            const value = data.data.value;
-            console.log(data.data.durations)
+//         if (data.event === "device_change" && data.data) {
+//             const id = data.data.id;
+//             const value = data.data.value;
+//             console.log(data.data.durations)
             
-            updateDeviceChart(data.data.id, data.data.durations)
-            saveChartData(data.data.id, data.data.durations);
+//             updateDeviceChart(data.data.id, data.data.durations)
+//             saveChartData(data.data.id, data.data.durations);
             
-            const currentStates = getStoredDeviceStates();
-            currentStates[id] = value;
-            saveDeviceStates(currentStates);
+//             const currentStates = getStoredDeviceStates();
+//             currentStates[id] = value;
+//             saveDeviceStates(currentStates);
 
-            const valueElem = document.getElementById(id);
-            if (valueElem) {
+//             const valueElem = document.getElementById(id);
+//             if (valueElem) {
                 
-                if (id.includes('Tool'))
-                {
-                    valueElem.style.color = (value === "ON"? "#6ed43f" : "red")
-                    if (valueElem.parentElement) {
-                        valueElem.parentElement.style.border = (value === "ON"? "2px solid #6ed43f" : "2px solid red")
-                    }
-                }
+//                 if (id.includes('Tool'))
+//                 {
+//                     valueElem.style.color = (value === "ON"? "#6ed43f" : "red")
+//                     if (valueElem.parentElement) {
+//                         valueElem.parentElement.style.border = (value === "ON"? "2px solid #6ed43f" : "2px solid red")
+//                     }
+//                 }
 
-                if (id.includes('Gate')){
-                    valueElem.src = (value === "OPEN"? "../static/icons/blast-gate-open.png": "../static/icons/blast-gate-closed.png")
-                }
-            }
-        }
+//                 if (id.includes('Gate')){
+//                     valueElem.src = (value === "OPEN"? "../static/icons/blast-gate-open.png": "../static/icons/blast-gate-closed.png")
+//                 }
+//             }
+//         }
 
-        if (data.event === "connection_established" && data.data_items) {
-            saveDeviceStates(data.data_items);
+//         if (data.event === "connection_established" && data.data_items) {
+//             saveDeviceStates(data.data_items);
             
-            Object.entries(data.data_items).forEach(([id, value]) => {
-                const valueElem = document.getElementById(id);
+//             Object.entries(data.data_items).forEach(([id, value]) => {
+//                 const valueElem = document.getElementById(id);
                 
-                if (valueElem) {
-                    if (id.includes('Tool'))
-                    {
-                        valueElem.style.color = (value === "ON"? "#6ed43f" : "red")
-                        if (valueElem.parentElement) {
-                            valueElem.parentElement.style.border = (value === "ON"? "2px solid #6ed43f" : "2px solid red")
-                        }
-                    }
+//                 if (valueElem) {
+//                     if (id.includes('Tool'))
+//                     {
+//                         valueElem.style.color = (value === "ON"? "#6ed43f" : "red")
+//                         if (valueElem.parentElement) {
+//                             valueElem.parentElement.style.border = (value === "ON"? "2px solid #6ed43f" : "2px solid red")
+//                         }
+//                     }
 
-                    if (id.includes('Gate'))
-                    {
-                        valueElem.src = (value === "OPEN"? "../static/icons/blast-gate-open.png": "../static/icons/blast-gate-closed.png")
-                    }
-                }
-            });
-        }
-    }
+//                     if (id.includes('Gate'))
+//                     {
+//                         valueElem.src = (value === "OPEN"? "../static/icons/blast-gate-open.png": "../static/icons/blast-gate-closed.png")
+//                     }
+//                 }
+//             });
+//         }
+//     }
 
-    socket.onclose = () => {
-        console.log("Connection closed.")
-    }
-}
+//     socket.onclose = () => {
+//         console.log("Connection closed.")
+//     }
+// }
 
 const colors = ["#2F3061", "#ffb800", "#5BC0EB"]
 
@@ -335,13 +335,10 @@ async function sendSimulationMode() {
     saveSimulationMode(simulationMode);
 
     try {
-        const response = await fetch('/simulation-mode', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ enabled: simulationMode })
-        });
+        socket.send(JSON.stringify({
+            method: "simulation_mode",
+            params: { name: "SimulationMode", args: true }
+        }));
 
         if (!response.ok) {
             throw new Error('Failed to update simulation mode');
@@ -356,4 +353,81 @@ async function sendSimulationMode() {
         saveSimulationMode(checkbox.checked);
         alert('Failed to update simulation mode. Please try again.');
     }
+}
+
+function setupEventSource() {
+    const device_uuid = document.querySelector('meta[name="device-uuid"]')?.content;
+    if (!device_uuid) {
+        console.error("Device UUID not found");
+        return;
+    }
+
+    const eventSource = new EventSource(`/updates/${device_uuid}`);
+
+    eventSource.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if(data['event'] !== 'ping'){
+                console.log("Received update:", data);
+            }
+            if (data.event === "device_change" && data.data) {
+                updateDeviceUI(data.data);
+            } else if (data.event === "connection_established") {
+                initializeUI(data.data_items);
+            }
+        } catch (e) {
+            console.error("Error processing event:", e);
+        }
+    };
+
+    eventSource.onerror = (error) => {
+        console.error("SSE Error:", error);
+        eventSource.close();
+        setTimeout(setupEventSource, 3000); // Reconnect after 3 seconds
+    };
+}
+
+function updateDeviceUI(updateData) {
+    const { id, value, durations } = updateData;
+    
+    // Update the value display
+    const valueElem = document.getElementById(id);
+    if (valueElem) {
+        if (id.includes('Tool')) {
+            valueElem.style.color = (value === "ON" ? "#6ed43f" : "red");
+            if (valueElem.parentElement) {
+                valueElem.parentElement.style.border = (value === "ON" ? "2px solid #6ed43f" : "2px solid red");
+            }
+        } else if (id.includes('Gate')) {
+            valueElem.src = (value === "OPEN" 
+                ? "../static/icons/blast-gate-open.png" 
+                : "../static/icons/blast-gate-closed.png");
+        }
+    }
+
+    // Update the chart if durations are provided
+    if (durations) {
+        updateDeviceChart(id, durations);
+        saveChartData(id, durations);
+    }
+}
+
+function initializeUI(dataItems) {
+    saveDeviceStates(dataItems);
+    
+    Object.entries(dataItems).forEach(([id, value]) => {
+        const valueElem = document.getElementById(id);
+        if (!valueElem) return;
+
+        if (id.includes('Tool')) {
+            valueElem.style.color = (value === "ON" ? "#6ed43f" : "red");
+            if (valueElem.parentElement) {
+                valueElem.parentElement.style.border = (value === "ON" ? "2px solid #6ed43f" : "2px solid red");
+            }
+        } else if (id.includes('Gate')) {
+            valueElem.src = (value === "OPEN" 
+                ? "../static/icons/blast-gate-open.png" 
+                : "../static/icons/blast-gate-closed.png");
+        }
+    });
 }
