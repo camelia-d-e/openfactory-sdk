@@ -33,7 +33,7 @@ class ToolMonitoring(OpenFactoryApp):
         """
         super().__init__(app_uuid, ksqlClient, bootstrap_servers, loglevel)
         self.tool_states = {}
-        self.asset_uuid = "IVAC"
+        object.__setattr__(self, 'ASSET_ID', 'IVAC')
 
         self.add_attribute('ivac_system', AssetAttribute(
             self.IVAC_SYSTEM_UUID,
