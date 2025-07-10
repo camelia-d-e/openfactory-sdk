@@ -47,7 +47,6 @@ class ConnectionManager:
                 if connection in self.outgoing_queues:
                     queue = self.outgoing_queues[connection]
                     try:
-                        print(f"Queuing message for connection {connection} on device {device_uuid}: {message}")
                         await queue.put(json.dumps(message))
                     except Exception as e:
                         print(f"Error queuing message for connection: {e}")
@@ -227,30 +226,32 @@ class OpenFactoryAPI(OpenFactoryApp):
 
     async def handle_client_message(self, device_uuid: str, message: dict, websocket):
         """Handle incoming messages from clients."""
-        if not isinstance(message, dict):
-            await websocket.send(json.dumps({"error": "Invalid message format"}))
-            return
-        
         try:
             print(f"Received message from {device_uuid}: {message}")
             
-            if "method" in message:
-                method = message["method"]
+            if message.get("method") == "simulation_mode":
                 params = message.get("params", {})
+                name = params.get("name")
+                args = params.get("args")
                 
-                if method == "simulation_mode":
-                    name = params.get("name")
-                    args = params.get("args")
-                    self.method(name, str(args).lower())
-                    print(f'Sent to CMD_STREAM: SimulationMode with value {str(args).lower()}')
-                    await websocket.send(json.dumps({"result": "Simulation mode set"}))
+                self.method(name, str(args).lower())
+                print(f'Sent to CMD_STREAM: SimulationMode with value {str(args).lower()}')
                 
-                else:
-                    await websocket.send(json.dumps({"error": "Unknown method"}))
+                await websocket.send(json.dumps({
+                    "event": "simulation_mode_updated",
+                    "success": True,
+                    "value": args
+                }))
+            else:
+                await websocket.send(json.dumps({"error": "Unknown method"}))
         
         except Exception as e:
             print(f"Error handling client message: {e}")
-            await websocket.send(json.dumps({"error": f"Internal server error: {str(e)}"}))
+            await websocket.send(json.dumps({
+                "event": "simulation_mode_updated",
+                "success": False,
+                "error": str(e)
+            }))
 
     async def handle_devices_list_connection(self, websocket):
         """Handle connections to the /ws/devices endpoint"""

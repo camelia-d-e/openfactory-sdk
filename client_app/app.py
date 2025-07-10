@@ -130,5 +130,25 @@ async def stream_updates(device_uuid: str):
         media_type="text/event-stream",
     )
 
+@app.post("/simulation-mode/{device_uuid}")
+async def set_simulation_mode(device_uuid: str, request: Request):
+    try:
+        data = await request.json()
+        simulation_mode = data.get("enabled", False)
+        
+        async with websockets.connect(f"{API_BASE_URL}/ws/devices/{device_uuid}") as ws:
+            await ws.send(json.dumps({
+                "method": "simulation_mode",
+                "params": {
+                    "name": "SimulationMode",
+                    "args": simulation_mode
+                }
+            }))
+            response = await ws.recv()
+            return json.loads(response)
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=3000, reload=True)

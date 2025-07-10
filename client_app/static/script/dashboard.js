@@ -160,78 +160,6 @@ function initializeDefaultCharts() {
     });
 }
 
-// const metaElement = document.querySelector('meta[name="device-uuid"]');
-// const device_uuid = metaElement ? metaElement.getAttribute('content') : null;
-
-// if (device_uuid) {
-//     const wsl_url = `ws://localhost:8000/ws/devices/${device_uuid}`
-//     const socket = new WebSocket(wsl_url)
-//     socket.onopen = () => {
-//         console.log("Socket opened")
-//     }
-
-//     socket.onmessage = (event) => {
-        
-//         const data = JSON.parse(event.data);
-
-//         if (data.event === "device_change" && data.data) {
-//             const id = data.data.id;
-//             const value = data.data.value;
-//             console.log(data.data.durations)
-            
-//             updateDeviceChart(data.data.id, data.data.durations)
-//             saveChartData(data.data.id, data.data.durations);
-            
-//             const currentStates = getStoredDeviceStates();
-//             currentStates[id] = value;
-//             saveDeviceStates(currentStates);
-
-//             const valueElem = document.getElementById(id);
-//             if (valueElem) {
-                
-//                 if (id.includes('Tool'))
-//                 {
-//                     valueElem.style.color = (value === "ON"? "#6ed43f" : "red")
-//                     if (valueElem.parentElement) {
-//                         valueElem.parentElement.style.border = (value === "ON"? "2px solid #6ed43f" : "2px solid red")
-//                     }
-//                 }
-
-//                 if (id.includes('Gate')){
-//                     valueElem.src = (value === "OPEN"? "../static/icons/blast-gate-open.png": "../static/icons/blast-gate-closed.png")
-//                 }
-//             }
-//         }
-
-//         if (data.event === "connection_established" && data.data_items) {
-//             saveDeviceStates(data.data_items);
-            
-//             Object.entries(data.data_items).forEach(([id, value]) => {
-//                 const valueElem = document.getElementById(id);
-                
-//                 if (valueElem) {
-//                     if (id.includes('Tool'))
-//                     {
-//                         valueElem.style.color = (value === "ON"? "#6ed43f" : "red")
-//                         if (valueElem.parentElement) {
-//                             valueElem.parentElement.style.border = (value === "ON"? "2px solid #6ed43f" : "2px solid red")
-//                         }
-//                     }
-
-//                     if (id.includes('Gate'))
-//                     {
-//                         valueElem.src = (value === "OPEN"? "../static/icons/blast-gate-open.png": "../static/icons/blast-gate-closed.png")
-//                     }
-//                 }
-//             });
-//         }
-//     }
-
-//     socket.onclose = () => {
-//         console.log("Connection closed.")
-//     }
-// }
-
 const colors = ["#2F3061", "#ffb800", "#5BC0EB"]
 
 function createPieChart(dataitem_id, total, percentages, data, labels) {
@@ -332,13 +260,21 @@ function restoreSimulationMode() {
 async function sendSimulationMode() {
     const checkbox = document.querySelector('.switch input[type="checkbox"]');
     const simulationMode = checkbox.checked;
-    saveSimulationMode(simulationMode);
+    const device_uuid = document.querySelector('meta[name="device-uuid"]')?.content;
+    
+    if (!device_uuid) {
+        console.error("Device UUID not found");
+        return;
+    }
 
     try {
-        socket.send(JSON.stringify({
-            method: "simulation_mode",
-            params: { name: "SimulationMode", args: true }
-        }));
+        const response = await fetch(`/simulation-mode/${device_uuid}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ enabled: simulationMode })
+        });
 
         if (!response.ok) {
             throw new Error('Failed to update simulation mode');
@@ -346,11 +282,10 @@ async function sendSimulationMode() {
 
         const result = await response.json();
         console.log('Simulation mode updated:', result);
-
+        saveSimulationMode(simulationMode);
     } catch (error) {
         console.error('Error updating simulation mode:', error);
         checkbox.checked = !simulationMode;
-        saveSimulationMode(checkbox.checked);
         alert('Failed to update simulation mode. Please try again.');
     }
 }
@@ -375,6 +310,15 @@ function setupEventSource() {
             } else if (data.event === "connection_established") {
                 initializeUI(data.data_items);
             }
+            if (data.event === "simulation_mode_updated") {
+            if (data.success) {
+                saveSimulationMode(data.value);
+            } else {
+                console.error("Failed to update simulation mode:", data.error);
+                const checkbox = document.querySelector('.switch input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+            }
+        }
         } catch (e) {
             console.error("Error processing event:", e);
         }
@@ -383,14 +327,13 @@ function setupEventSource() {
     eventSource.onerror = (error) => {
         console.error("SSE Error:", error);
         eventSource.close();
-        setTimeout(setupEventSource, 3000); // Reconnect after 3 seconds
+        setTimeout(setupEventSource, 3000);
     };
 }
 
 function updateDeviceUI(updateData) {
     const { id, value, durations } = updateData;
     
-    // Update the value display
     const valueElem = document.getElementById(id);
     if (valueElem) {
         if (id.includes('Tool')) {
@@ -405,7 +348,6 @@ function updateDeviceUI(updateData) {
         }
     }
 
-    // Update the chart if durations are provided
     if (durations) {
         updateDeviceChart(id, durations);
         saveChartData(id, durations);
