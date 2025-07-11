@@ -1,0 +1,18 @@
+services:
+  openfactory-api:
+    image: python:3.10
+    networks:
+      - factory-net
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: bash -c "pip install -r requirements.txt && python3 app.py"
+    stdin_open: true
+    tty: true
+
+networks:
+  factory-net:
+    name: factory-net
+    external: true
