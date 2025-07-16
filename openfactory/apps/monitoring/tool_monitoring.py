@@ -130,6 +130,10 @@ class ToolMonitoring(OpenFactoryApp):
         elif (msg_value['id'] == 'A2ToolPlus'):
             prev_state = self.tool_states.get('A2ToolPlus', 'UNAVAILABLE')
             self.tool_states['A2ToolPlus'] = msg_value['value']
+        
+        if (msg_value['id'] == 'Buzzer') and msg_value['value'] != self.ivac.__getattr__('ivac_tools_status').tag:
+            self.method("BuzzerControl", self.ivac.__getattr__('ivac_tools_status').tag)
+            print(f"Sent to CMD_STREAM: BuzzerControl with value {self.ivac.__getattr__('ivac_tools_status').tag}")
 
         if (prev_state != msg_value['value'] and msg_value['id'] in self.tool_states.keys()):
             self.verify_tool_states()
