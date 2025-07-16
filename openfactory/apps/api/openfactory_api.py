@@ -92,6 +92,9 @@ class OpenFactoryAPI(OpenFactoryApp):
                     ksqlClient=self.ksqlClient,
                     bootstrap_servers="broker:29092"
                 )
+
+                ### self.create_device_stream(device_uuid)
+                ### self.device_assets[device_uuid].subscribe_to_device_stream(previously_created_stream)
                 self.devices_assets[device_uuid].subscribe_to_events(
                     self.on_event,
                     f'api_events_group_{device_uuid}'
@@ -179,10 +182,10 @@ class OpenFactoryAPI(OpenFactoryApp):
                             change = queue.get()
                             message = {
                                 "event": "device_change",
-                                "device_uuid": device_uuid,
-                                "timestamp": time.time(),
+                                "asset_uuid": device_uuid,
                                 "data": dict(change)
                             }
+                            print(f"ello voici le message: {message}")
                             await self.connection_manager.send_to_device_connections(device_uuid, message)
                     await asyncio.sleep(0.1)
                 except Exception as e:
@@ -190,6 +193,20 @@ class OpenFactoryAPI(OpenFactoryApp):
                     await asyncio.sleep(1)
         
         self.event_processing_task = asyncio.create_task(process_device_events())
+
+    def create_device_stream(self, device_uuid: str) -> None:
+        """Create a stream for the device to receive updates"""
+        try:
+            query = (
+                f"CREATE STREAM IF NOT EXISTS device_stream_{device_uuid} "
+                f"WITH (KAFKA_TOPIC='monitored_devices_events', PARTITIONS=1) AS "
+                f"SELECT ID AS KEY, VALUE, ROWTIME AS TIMESTAMP FROM ASSETS_STREAM WHERE ASSET_UUID = '{device_uuid}' "
+                f"AND TYPE IN ('Events', 'Condition') AND VALUE != 'UNAVAILABLE'"
+                f"EMIT CHANGES;"
+            )
+            self.ksqlClient.query(query)
+        except Exception as e:
+            print(f"Error getting device dataitems for {device_uuid}: {e}")
 
     def get_all_devices(self) -> List[str]:
         try:
@@ -292,7 +309,6 @@ class OpenFactoryAPI(OpenFactoryApp):
     def on_event(self, msg_key: str, msg_value: dict) -> None:
         try:
             device_uuid = msg_key
-            msg_value['device_uuid'] = device_uuid
             self.add_duration_updates(msg_value)
             self.device_queues[device_uuid].put(msg_value)
         except Exception as e:
