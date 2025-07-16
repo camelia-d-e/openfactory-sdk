@@ -1,0 +1,12 @@
+# Virtual iVAC Tool Plus
+
+devices:
+
+  vivac:
+    uuid: VIRTUAL-CNC
+    agent:
+      port: 5000
+      device_xml: device.xml
+      adapter:
+        ip: virtual-cnc-adapter
+        port: 7878
