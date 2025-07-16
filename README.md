@@ -60,7 +60,7 @@ devices:
 To run the device: `$openfactory-sdk device up <PATH_TO_YML_FILE>`. 
 
 
-### Adding a custom asset
+### OpenFactory apps
 To add an app for analytics/monitoring of a device (or any other OpenFactory app) a .yml config file,  a Dockerfile and the app (should inherit Asset class) need to be added to the project. The .yml file is the OpenFactory configuration file and should look like this:
 ```
 apps:
@@ -70,4 +70,7 @@ apps:
 ```
 
 To build an image for the app  `$docker build -t <IMAGE_NAME> <PATH_TO_DOCKERFILE>`. And to run the app: `$openfactory-sdk app up <PATH_TO_YML_FILE>`.
- 
+
+
+** If the physical ivac device is not available, it is possible to simulate the adapter by going to openfactory/virtual/iVAC and running the command: `docker compose up -d`.
+The IP address in ivac.yml needs to be changed to virtual-ivac-tool-plus-adapter.
