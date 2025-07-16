@@ -135,3 +135,17 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error fetching variable_id: {e}")
             return ''
+        
+    def fetch_type(self, variable_id: str) -> str:
+        """Fetch data Type from VariableId"""
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT Nom FROM Type WHERE Id = (SELECT TypeId FROM Variable WHERE Id = ?)", (variable_id))
+            datatype = []
+            for row in cursor:
+                datatype = [elem for elem in row]
+            cursor.close()
+            return datatype[0]
+        except Exception as e:
+            print(f"Error fetching variable_id: {e}")
+            return ''

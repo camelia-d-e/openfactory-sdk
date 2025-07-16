@@ -31,10 +31,10 @@ class MessageHandler:
                 device_message = self.parse_device_message(message_data)
                 print(f"Received update for device {device_message.asset_uuid} : ({device_message.dataitem_id}, {device_message.value})")
                 variable_id = self.db_manager.fetch_variable_id(device_message.asset_uuid, device_message.dataitem_id)
-                self.db_manager.insert_strvalue(variable_id, device_message.value, device_message.timestamp)
-            else:
-                pass
-                
+                datatype = self.db_manager.fetch_type(variable_id)
+                if datatype == "EquipmentMode" or datatype == "DoorStatus":
+                    self.db_manager.insert_strvalue(variable_id, device_message.value, device_message.timestamp)
+
         except Exception as e:
             print(f"Error handling message: {e}")
     
