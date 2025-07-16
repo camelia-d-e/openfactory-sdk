@@ -27,9 +27,6 @@ IF OBJECT_ID('dbo.Model', 'U') IS NOT NULL
 IF OBJECT_ID('dbo.Room', 'U') IS NOT NULL
     DROP TABLE dbo.Room;
 
-IF OBJECT_ID('dbo.Transform', 'U') IS NOT NULL
-    DROP TABLE dbo.Transform;
-
 CREATE TABLE Room (
 	Id NVARCHAR(255) PRIMARY KEY,
 	Nom NVARCHAR(255) NOT NULL,
@@ -54,16 +51,6 @@ CREATE TABLE Model (
 	Id INT PRIMARY KEY IDENTITY,
 	Nom NVARCHAR(255) NOT NULL,
 	Description Text NOT NULL,
-);
-
-CREATE TABLE Transform (
-	Id INT PRIMARY KEY IDENTITY,
-	PositionX FLOAT NOT NULL,
-	PositionY FLOAT NOT NULL,
-	PositionZ FLOAT NOT NULL,
-	RotationX FLOAT NOT NULL,
-	RotationY FLOAT NOT NULL,
-	RotationZ FLOAT NOT NULL,
 );
 
 CREATE TABLE Equipment (
