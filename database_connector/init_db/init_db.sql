@@ -6,6 +6,12 @@ IF OBJECT_ID('dbo.OpenFactoryLink', 'U') IS NOT NULL
 IF OBJECT_ID('dbo.StrValue', 'U') IS NOT NULL
     DROP TABLE dbo.StrValue;
 
+IF OBJECT_ID('dbo.IntValue', 'U') IS NOT NULL
+    DROP TABLE dbo.IntValue;
+
+IF OBJECT_ID('dbo.FloatValue', 'U') IS NOT NULL
+    DROP TABLE dbo.FloatValue;
+
 IF OBJECT_ID('dbo.Variable', 'U') IS NOT NULL
     DROP TABLE dbo.Variable;
 
@@ -85,6 +91,20 @@ CREATE TABLE StrValue (
 	Id INT PRIMARY KEY IDENTITY,
 	VariableId INT FOREIGN KEY REFERENCES Variable(Id),
 	Value NVARCHAR(255) NOT NULL,
+	Timestamp DATETIME2 NOT NULL
+);
+
+CREATE TABLE IntValue (
+	Id INT PRIMARY KEY IDENTITY,
+	VariableId INT FOREIGN KEY REFERENCES Variable(Id),
+	Value INT NOT NULL,
+	Timestamp DATETIME2 NOT NULL
+);
+
+CREATE TABLE FloatValue (
+	Id INT PRIMARY KEY IDENTITY,
+	VariableId INT FOREIGN KEY REFERENCES Variable(Id),
+	Value FLOAT NOT NULL,
 	Timestamp DATETIME2 NOT NULL
 );
 
