@@ -1,17 +1,17 @@
-# Docker compose project for Virtual iVac Tool Plus Adapter
+# Docker compose project for Virtual CNC Adapter
 #
 # Deploy the virtual adapter:
 #   docker compose up -d
 #
-# Tear down the virtual adapter
+# Tear down the virtual adapter:
 #   docker compose down
 
 services:
-  virtual-ivac-tool-plus-adapter:
+  virtual-cnc-adapter:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ofa/ivactoolplus
+    image: ofa/cnc
     environment:
       - MIN_TOGGLE_TIME=2.0
       - MAX_TOGGLE_TIME=6.0
