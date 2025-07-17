@@ -16,7 +16,7 @@ class Virtual_CNC(MTCDevice):
 
     def __init__(self):
         self._spindle_speed = 0
-        self._vacuum_status = ''
+        self._vacuum_status = 'ACTIVE'
 
     def read_data(self) -> dict:
         """Read and toggle tool states with random delay"""
@@ -27,7 +27,7 @@ class Virtual_CNC(MTCDevice):
         if self._vacuum_status == 'ACTIVE':
             self._vacuum_status = 'INACTIVE'
         else:
-            self.actuator_state = 'ACTIVE'
+            self._vacuum_status = 'ACTIVE'
 
         return {
             'spindle_speed': self._spindle_speed,
