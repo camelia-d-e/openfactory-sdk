@@ -1,0 +1,30 @@
+<MTConnectDevices>
+  <Devices>
+    <Device uuid="CNC123" name="My CNC Machine">
+      <Components>
+        <Controller id="controller" name="Controller">
+          <DataItems>
+            <DataItem category="EVENT" id="mode" name="Mode" type="CONTROLLER_MODE" subType="ACTUAL"  />
+            <DataItem category="SAMPLE" id= "program" name="Program" type="PROGRAM"  />
+          </DataItems>
+        </Controller>
+        <Axis id="x_axis" name="X Axis">
+          <DataItems>
+            <DataItem category="SAMPLE" id="Position" type="POSITION" units="MILLIMETER"  />
+            <DataItem category="SAMPLE" id="Velocity" type="VELOCITY" units="MM/SEC"  />
+          </DataItems>
+        </Axis>
+        <Rotary id="spindle" name="Spindle">
+            <DataItems>
+                <DataItem category="SAMPLE" id="SpindleSpeed" type="ROTARY_VELOCITY" units="REVOLUTION/MINUTE" />
+            </DataItems>
+        </Rotary>
+      </Components>
+      <Systems id="vac_system" name="VacuumSystem">
+        <DataItems>
+            <DataItem category="EVENT" id="VacuumStatus" type="ACTUATOR_STATE" subType="ACTIVE" />
+        </DataItems>
+      </Systems>
+    </Device>
+  </Devices>
+</MTConnectDevices>
