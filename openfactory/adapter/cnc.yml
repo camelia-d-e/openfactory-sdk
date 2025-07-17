@@ -3,9 +3,9 @@ devices:
     uuid: CNC123
 
     agent:
-      port: 5000
+      port: 5001
       device_xml: cnc.xml
       adapter:
         ip: virtual-cnc-adapter
-        port: 7878
+        port: 7879
    

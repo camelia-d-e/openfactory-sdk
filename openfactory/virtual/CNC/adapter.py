@@ -37,7 +37,7 @@ class Virtual_CNC(MTCDevice):
 
 class Virtual_CNCAdapter(MTCAdapter):
     device_class = Virtual_CNC
-    adapter_port = int(os.environ.get("ADAPTER_PORT", 7878))
+    adapter_port = 7879
 
     def __init__(self):
         super().__init__()
