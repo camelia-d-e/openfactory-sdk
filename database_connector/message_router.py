@@ -11,7 +11,7 @@ class DeviceMessage:
     value: Any
     timestamp: datetime
 
-class MessageHandler:
+class MessageRouter:
     """
     Handles routing of WebSocket messages to appropriate database operations
     """
@@ -30,10 +30,7 @@ class MessageHandler:
             if message_data.get('event', '') == "device_change":
                 device_message = self.parse_device_message(message_data)
                 print(f"Received update for device {device_message.asset_uuid} : ({device_message.dataitem_id}, {device_message.value})")
-                variable_id = self.db_manager.fetch_variable_id(device_message.asset_uuid, device_message.dataitem_id)
-                datatype = self.db_manager.fetch_type(variable_id)
-                if datatype == "EquipmentMode" or datatype == "DoorStatus":
-                    self.db_manager.insert_strvalue(variable_id, device_message.value, device_message.timestamp)
+                self.db_manager.insert_value(device_message.asset_uuid, device_message.dataitem_id, device_message.value, device_message.timestamp)
 
         except Exception as e:
             print(f"Error handling message: {e}")

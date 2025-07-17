@@ -9,4 +9,6 @@ SELECT * FROM Room;
 SELECT * FROM Type;
 SELECT * FROM Variable;
 SELECT * FROM StrValue;
+SELECT * FROM IntValue;
+SELECT * FROM FloatValue;
 SELECT * FROM OpenFactoryLink;

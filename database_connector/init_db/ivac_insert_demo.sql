@@ -28,17 +28,19 @@ VALUES
 
 INSERT INTO Transform (PositionX, PositionY, PositionZ, RotationX, RotationY, RotationZ)
 VALUES (2.5, 0.0, 1.2, 0.0, 0.0, 0.0);
+DECLARE @TransformId1 INT = SCOPE_IDENTITY();
 
 INSERT INTO Transform (PositionX, PositionY, PositionZ, RotationX, RotationY, RotationZ)
 VALUES (3.5, 0.0, 1.2, 0.0, 0.0, 0.0);
+DECLARE @TransformId2 INT = SCOPE_IDENTITY();
 
 INSERT INTO Transform (PositionX, PositionY, PositionZ, RotationX, RotationY, RotationZ)
 VALUES (2.5, 1.0, 1.2, 0.0, 0.0, 0.0);
+DECLARE @TransformId3 INT = SCOPE_IDENTITY();
 
 INSERT INTO Transform (PositionX, PositionY, PositionZ, RotationX, RotationY, RotationZ)
 VALUES (3.5, 1.0, 1.2, 0.0, 0.0, 0.0);
-
-GO
+DECLARE @TransformId4 INT = SCOPE_IDENTITY();
 
 DECLARE @TypeSpindle INT = (SELECT Id FROM EquipmentType WHERE Nom = 'Spindle');
 DECLARE @TypeLathe INT = (SELECT Id FROM EquipmentType WHERE Nom = 'Lathe');
@@ -46,19 +48,12 @@ DECLARE @TypeGate INT = (SELECT Id FROM EquipmentType WHERE Nom = 'BlastGate');
 DECLARE @Mfr INT = (SELECT Id FROM Manufacturer WHERE Nom = 'Test');
 DECLARE @Model INT = (SELECT Id FROM Model WHERE Nom = 'Test');
 
-DECLARE @TransformId1 INT = (SELECT Id FROM Transform WHERE PositionX = 2.5 AND PositionY = 0.0 AND PositionZ = 1.2);
-DECLARE @TransformId2 INT = (SELECT Id FROM Transform WHERE PositionX = 3.5 AND PositionY = 0.0 AND PositionZ = 1.2);
-DECLARE @TransformId3 INT = (SELECT Id FROM Transform WHERE PositionX = 2.5 AND PositionY = 1.0 AND PositionZ = 1.2);
-DECLARE @TransformId4 INT = (SELECT Id FROM Transform WHERE PositionX = 3.5 AND PositionY = 1.0 AND PositionZ = 1.2);
-
 INSERT INTO Equipment (Id, ParentEquipmentId, EquipmentTypeId, ManufacturerId, ModelId, RoomId, TransformId, Nom, PrefabKey, SerialNumber, PurchaseDate)
 VALUES 
 ('1', NULL, @TypeSpindle, @Mfr, @Model, 'room-001', @TransformId1, 'SpindleA1', 'Spindle_Prefab', 'Test', '2025-07-11'),
 ('2', NULL, @TypeLathe, @Mfr, @Model, 'room-001', @TransformId2, 'LatheA2', 'Lathe_Prefab', 'Test', '2025-07-11'),
 ('3', NULL, @TypeGate, @Mfr, @Model, 'room-001', @TransformId3, 'A1BlastGate', 'A1BlastGate_Prefab', 'Test', '2025-07-11'),
 ('4', NULL, @TypeGate, @Mfr, @Model, 'room-001', @TransformId4, 'A2BlastGate', 'A2BlastGate_Prefab', 'Test', '2025-07-11');
-
-GO
 
 DECLARE @TypeToolStatus INT = (SELECT Id FROM Type WHERE Nom = 'EquipmentMode');
 DECLARE @TypeGateStatus INT = (SELECT Id FROM Type WHERE Nom = 'DoorState');

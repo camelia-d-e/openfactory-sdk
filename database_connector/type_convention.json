@@ -1,0 +1,4 @@
+{
+    "str": ["EquipmentMode", "DoorState", "ActuatorState"],
+    "float": ["RotaryVelocity"]
+}

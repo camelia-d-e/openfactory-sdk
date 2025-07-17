@@ -3,8 +3,11 @@ import pyodbc
 import os
 import time
 from init_db.build_bd import main as init_db
+from insert_type_strategy_factory import InsertTypeFactory
 
 class DatabaseManager:
+    """Connects to and executes queries in database"""
+
     def __init__(self, database_name, user, password, server=None, max_retries=5, retry_delay=5):
         self.database_name = database_name
         self.user = user
@@ -17,7 +20,7 @@ class DatabaseManager:
         if not self.connect():
             raise ConnectionError("Failed to connect to the database after retries.")
         try:
-            init_db(self.connection, database_name, user, password, server)
+            init_db(self.connection, server)
             print("Database schema initialized successfully")
         except Exception as e:
             print(f"Database schema initialization failed: {e}")
@@ -97,16 +100,14 @@ class DatabaseManager:
         
         return True
     
-    def insert_strvalue(self, variable_id, update_value, update_timestamp):
+    def insert_value(self, asset_uuid, dataitem_id, update_value, update_timestamp):
         """Insert new value into StrValue table"""
-        try:
-            cursor = self.connection.cursor()
-            cursor.execute("INSERT INTO StrValue (VariableId, Value, Timestamp) VALUES (?, ?, ?)",
-                           (variable_id, update_value, update_timestamp))
-            cursor.commit()
-            cursor.close()
-        except Exception as e:
-            print(f"Error updating variable {variable_id}: {e}")
+        variable_id = self.fetch_variable_id(asset_uuid, dataitem_id)
+        var_type = self.fetch_type(variable_id)
+
+        insertStrategy = InsertTypeFactory.create_strategy(var_type)
+        insertStrategy.insert_value(self.connection, variable_id, update_value, update_timestamp)
+
 
     def fetch_all_assets(self) -> List[str]:
         """Fetch all assets from the database"""
@@ -121,6 +122,9 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error fetching assets: {e}")
             return []
+        
+    def fetch_assets(self, included_assets:List[str]=[], excluded_assets:List[str]=[]):
+        pass
     
     def fetch_variable_id(self, asset_uuid: str, dataitem_id: str) -> str:
         """Fetch VariableId from DataitemId"""

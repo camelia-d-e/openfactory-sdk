@@ -1,6 +1,6 @@
 import os
 import asyncio
-from message_handler import MessageHandler
+from message_router import MessageRouter
 from websocket_client import OpenFactoryWebSocketClient
 from database_manager import DatabaseManager
 
@@ -14,7 +14,7 @@ class DatabaseConnectorApp:
         """Run the application"""
         print("Application is running. Press Ctrl+C to stop.")
         try:
-            message_handler = MessageHandler(self.db_manager)
+            message_handler = MessageRouter(self.db_manager)
 
             self.websocket_client.set_message_handler(message_handler.handle_message)
 
