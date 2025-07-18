@@ -24,7 +24,7 @@ class OpenFactoryWebSocketClient:
             message = await ws.recv()
             data = json.loads(message)
             
-            if data.get("event") == "devices_list":
+            if data.get("event", "") == "devices_list":
                 for device in data.get("devices", []):
                     self.devices[device["device_uuid"]] = {
                         "device_uuid": device["device_uuid"],

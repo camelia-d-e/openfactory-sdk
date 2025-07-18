@@ -302,15 +302,16 @@ function setupEventSource() {
     eventSource.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
-            if(data['event'] !== 'ping'){
+            const event = data['event'] || 'device_change'
+            if(event !== 'ping'){
                 console.log("Received update:", data);
             }
-            if (data.event === "device_change" && data.data) {
+            if (event === "device_change" && data.data) {
                 updateDeviceUI(data.data);
             } else if (data.event === "connection_established") {
                 initializeUI(data.data_items);
             }
-            if (data.event === "simulation_mode_updated") {
+            if (event === "simulation_mode_updated") {
             if (data.success) {
                 saveSimulationMode(data.value);
             } else {
