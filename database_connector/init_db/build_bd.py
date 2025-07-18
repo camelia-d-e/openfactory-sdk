@@ -19,12 +19,14 @@ def main(connection, server: str = None):
                                 cursor.execute(command)
                         cursor.commit()
                         print("Database schema initialized successfully.") 
-            # script_path = os.path.join(os.path.dirname(__file__), 'ivac_insert_demo.sql')
-            # if os.path.exists(script_path):
-            #     execute_sql_script(connection, script_path, "iVAC insertion script")
+            
             script_path = os.path.join(os.path.dirname(__file__), 'cnc_insert_demo.sql')
             if os.path.exists(script_path):
                 execute_sql_script(connection, script_path, "CNC insertion script")
+
+            script_path = os.path.join(os.path.dirname(__file__), 'ivac_insert_demo.sql')
+            if os.path.exists(script_path):
+                execute_sql_script(connection, script_path, "iVAC insertion script")
 
             script_path = os.path.join(os.path.dirname(__file__), 'test.sql')
             if os.path.exists(script_path):
