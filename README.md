@@ -1,76 +1,101 @@
-# openfactory-sdk
-This repo offers a use case example of the [OpenFactory-SDK](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory-SDK.git)
+# Guide Utilisateur – OpenFactory SDK
+Guide pour l’installation, la configuration et l’utilisation du SDK OpenFactory pour simuler ou connecter des appareils industriels via MTConnect et déployer des applications d’analyse.
 
-## Setting up the environment
-### Requirements
-- DockerDesktop
-- WSL v2 (if on Windows)
-- Ubuntu enabled in Settings --> Resources --> WSL Integration on Docker (if on Windows)
-### Steps
-1. Make sure to add the image of the latest OpenFactory version under the features section in the devcontainer.json file like so:
+## Prérequis
+Avant de commencer, il faut s'assurer d’avoir les éléments suivants installés :
+- Docker Desktop
+- WSL v2 (si sur Windows)
+- Ubuntu activé dans Docker
+→ Paramètres → Ressources → Intégration WSL → Activer Ubuntu (si sur Windows)
+
+## Configuration de l’environnement
+### Étape 1 : Modifier devcontainer.json
+Ajouter les lignes suivantes dans la section features du fichier devcontainer.json si elles ne sont pas déjà là:
 ```
 "features": {
-    "docker-in-docker": {
-      "version": "latest"
-    },
-    "ghcr.io/demo-smart-factory-concordia-university/openfactory-sdk/infra:latest": {
-      "openfactory-version": "main"
-    }
+  "docker-in-docker": {
+    "version": "latest"
   },
+  "ghcr.io/demo-smart-factory-concordia-university/openfactory-sdk/infra:latest": {
+    "openfactory-version": "main"
+  }
+}
 ```
-2. In VSCode, a 'Reopen in container' notification should appear (click on it).
 
-## Run OpenFactory
-To start the openfactory-infra containers : `spinup` .
+### Étape 2 : Ouvrir le projet dans VSCode
+Une notification « Reopen in container » devrait apparaître. Cliquer dessus pour ouvrir le projet dans un container Docker.
 
-### MTConnect
-To add a MTConnect device, both the .xml and .yml config files should be added in the directory.
-The .xml file or MTConnect device file provides the structure and semantics for any given device(s) complying with the MTConnect Information Model (see [MTConnect Standard](https://docs.mtconnect.org/MTC_Part2_0_Devices_1_4_0.pdf) ).
-The .yml file is the OpenFactory config file for the device and should look like this:
+## Lancer OpenFactory
+Pour démarrer les containers d’infrastructure OpenFactory :
+`spinup`
+
+
+
+## Ajouter et lancer un appareil MTConnect
+Fichiers requis
+- Fichier XML : structure de l’appareil (conforme à MTConnect Standard)
+- Fichier YML : configuration OpenFactory de l’appareil
+### Exemple de fichier YML
 ```
 devices:
   my-device:
-    uuid: <DEVICE_UUID>
+    uuid: <UUID_DU_APPAREIL>
 
     agent:
-      port: <AGENT_PORT>
-      device_xml: <DEVICE_XML_FILE_NAME>
+      port: <PORT_AGENT>
+      device_xml: <NOM_FICHIER_XML>
       adapter:
-        ip: <ADAPTER_IP>
-        port: <ADAPTER_MTCONNECT_PORT>
+        ip: <IP_ADAPTATEUR>
+        port: <PORT_MTCONNECT>
 
     supervisor:
       image: ghcr.io/demo-smart-factory-concordia-university/opcua-supervisor
       adapter:
-        ip: <ADAPTER_IP>
-        port: <ADAPTER_OPCUA_PORT>
+        ip: <IP_ADAPTATEUR>
+        port: <PORT_OPCUA>
         environment:
-          - NAMESPACE_URI= <OPCUA_NAMESPACE>
-          - BROWSE_NAME= <OPCUA_BROWSA_NAME>
-          - KSQLDB_URL=http://ksqldb-server:8088"features": {
-    "docker-in-docker": {
-      "version": "latest"
-    },
-    "ghcr.io/demo-smart-factory-concordia-university/openfactory-sdk/infra:latest": {
-      "openfactory-version": "main"
-    }
-  },
+          - NAMESPACE_URI=<NAMESPACE_OPCUA>
+          - BROWSE_NAME=<NOM_BROWSE_OPCUA>
+          - KSQLDB_URL=http://ksqldb-server:8088
 ```
+L'agent est celui qui achemine l'information de l'équipement à OpenFactory. Le supervisor sert à envoyer des commandes à l'équipement par protocole OPC-UA et n'est pas toujours nécessaire (comme dans le cas de la CNC).
 
-To run the device: `$openfactory-sdk device up <PATH_TO_YML_FILE>`. 
+### Lancer l’appareil
+`$openfactory-sdk device up <CHEMIN_VERS_FICHIER_YML>`
 
+### Arrêter l'appareil
 
-### OpenFactory apps
-To add an app for analytics/monitoring of a device (or any other OpenFactory app) a .yml config file,  a Dockerfile and the app (should inherit Asset class) need to be added to the project. The .yml file is the OpenFactory configuration file and should look like this:
+## Simuler un appareil iVAC ou CNC
+Si l’appareil physique iVAC n’est pas disponible, il est possible de simuler l’adaptateur dans
+`cd openfactory/virtual/<EQUIPEMENT_SIMULÉ>`.
+### Lancer l'appareil simulé
+`docker compose up -d`
+
+Il faut s'assurer que l’adresse IP utilisée dans le fichier de configuration .yml de l'équipement (dans `openfactory/adapter/device.yml`) correspond à celle du conteneur de l'équipement simulé. Cette adresse est définie dans le fichier de configuration .yml de l'adapteur virtuel (dans `openfactory/virtual/<EQUIPEMENT_SIMULÉ>/vdevice.yml`).
+
+## Ajouter et lancer une application OpenFactory
+Fichiers requis
+- Fichier YML : configuration de l’application
+- Dockerfile : pour construire l’image
+- Code de l’application : doit hériter de la classe Asset
+### Exemple de fichier YML
 ```
 apps:
   app_name:
-    uuid: <APP_UUID>
-    image: <IMAGE_NAME>
+    uuid: <UUID_APP>
+    image: <NOM_IMAGE>
 ```
 
-To build an image for the app  `$docker build -t <IMAGE_NAME> <PATH_TO_DOCKERFILE>`. And to run the app: `$openfactory-sdk app up <PATH_TO_YML_FILE>`.
+#### Lancer l’application
+`$openfactory-sdk app up <CHEMIN_VERS_FICHIER_YML>`
+
+### OpenFactory-API
+Cette application OpenFactory sert de couche de service pour accéder aux données en temps réel à partir des assets déployés sur OpenFactory. 
+#### S'abonner à un device
+En se connectant au endpoint `ws://ofa-api:8000/ws/devices/<device_uuid>`, l'app permet à un client WebSocket de recevoir des updates en temps réel pour le device demandé (qui correspond à un asset OpenFactory). L'application s'occupe de créer un stream dérivé dédié à cet asset lors de la connection d'un nouveau client.
 
 
-** If the physical ivac device is not available, it is possible to simulate the adapter by going to openfactory/virtual/iVAC and running the command: `docker compose up -d`.
-The IP address in ivac.yml needs to be changed to virtual-ivac-tool-plus-adapter.
+
+
+
+
