@@ -37,7 +37,7 @@ Pour arrêter les containers d’infrastructure OpenFactory :
 
 ## Accéder à la base de données ksqldb
 Pour effectuer des queries et visualiser l'état de la base de données ksqldb (streams des assets, etc.):
-`ksqldb`
+`ksql`
 
 ## Ajouter et lancer un appareil MTConnect
 Fichiers requis
@@ -101,6 +101,10 @@ apps:
     image: <NOM_IMAGE>
 ```
 [Exemple de fichier .yml](/openfactory/apps/apps.yml)
+
+#### Construire les applications
+`$cd openfactory/apps/<APP>`
+`$docker build -t <NOM_IMAGE> <CHEMIN_VERS_DOCKERFILE>`
 
 #### Lancer les applications
 `$openfactory-sdk app up <CHEMIN_VERS_FICHIER_YML>`
