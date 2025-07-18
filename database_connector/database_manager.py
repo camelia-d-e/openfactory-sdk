@@ -104,9 +104,9 @@ class DatabaseManager:
         """Insert new value into StrValue table"""
         variable_id = self.fetch_variable_id(asset_uuid, dataitem_id)
         var_type = self.fetch_type(variable_id)
-
-        insertStrategy = InsertTypeFactory.create_strategy(var_type)
-        insertStrategy.insert_value(self.connection, variable_id, update_value, update_timestamp)
+        if variable_id and var_type:
+            insertStrategy = InsertTypeFactory.create_strategy(var_type)
+            insertStrategy.insert_value(self.connection, variable_id, update_value, update_timestamp)
 
 
     def fetch_all_assets(self) -> List[str]:
@@ -116,7 +116,7 @@ class DatabaseManager:
             cursor.execute("SELECT DISTINCT AssetUuid FROM OpenFactoryLink ")
             assets = []
             for row in cursor:
-                assets = [elem for elem in row]
+                assets += [elem for elem in row]
             cursor.close()
             return assets
         except Exception as e:
@@ -131,11 +131,14 @@ class DatabaseManager:
         try:
             cursor = self.connection.cursor()
             cursor.execute("SELECT VariableId FROM OpenFactoryLink WHERE DataitemId = ? AND AssetUuid = ?", (dataitem_id, asset_uuid))
-            variable_id = []
-            for row in cursor:
-                variable_id = [elem for elem in row]
+            result = cursor.fetchone()
             cursor.close()
-            return variable_id[0]
+
+            if result:
+                return result[0]
+            else:
+                print(f"No VariableId found for AssetUuid={asset_uuid} and DataitemId={dataitem_id}")
+                return ''
         except Exception as e:
             print(f"Error fetching variable_id: {e}")
             return ''
@@ -145,11 +148,14 @@ class DatabaseManager:
         try:
             cursor = self.connection.cursor()
             cursor.execute("SELECT Nom FROM Type WHERE Id = (SELECT TypeId FROM Variable WHERE Id = ?)", (variable_id))
-            datatype = []
-            for row in cursor:
-                datatype = [elem for elem in row]
+            result = cursor.fetchone()
             cursor.close()
-            return datatype[0]
+
+            if result:
+                return result[0]
+            else:
+                print(f"No type found for this VariableId")
+                return ''
         except Exception as e:
-            print(f"Error fetching variable_id: {e}")
+            print(f"Error fetching type: {e}")
             return ''

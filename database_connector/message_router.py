@@ -26,11 +26,12 @@ class MessageRouter:
         """
         try:
             message_data = json.loads(raw_message)
+            if(message_data.get('event', False)):
+                return
+            device_message = self.parse_device_message(message_data)
+            self.db_manager.insert_value(device_message.asset_uuid, device_message.dataitem_id, device_message.value, device_message.timestamp)
 
-            if message_data.get('event', '') == "device_change":
-                device_message = self.parse_device_message(message_data)
-                print(f"Received update for device {device_message.asset_uuid} : ({device_message.dataitem_id}, {device_message.value})")
-                self.db_manager.insert_value(device_message.asset_uuid, device_message.dataitem_id, device_message.value, device_message.timestamp)
+            print(f"Received update for device {device_message.asset_uuid} : ({device_message.dataitem_id}, {device_message.value})")
 
         except Exception as e:
             print(f"Error handling message: {e}")
@@ -39,11 +40,9 @@ class MessageRouter:
         """Parse raw message data into DeviceMessage object"""
         try:
             asset_uuid = message_data.get('asset_uuid')
-            dataitem_id = message_data.get('data').get('id')
-            value = message_data.get('data').get('value')
-            timestamp_str = message_data.get('data').get('attributes').get('timestamp')
-            
-            timestamp = timestamp_str[:-1] if timestamp_str.endswith('Z') else timestamp_str
+            dataitem_id = message_data.get('data').get('ID')
+            value = message_data.get('data').get('VALUE')
+            timestamp = message_data.get('data').get('TIMESTAMP')
             
             return DeviceMessage(
                 asset_uuid=asset_uuid,
