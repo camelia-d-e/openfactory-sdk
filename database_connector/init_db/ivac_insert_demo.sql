@@ -50,16 +50,16 @@ DECLARE @Model INT = (SELECT Id FROM Model WHERE Nom = 'Test');
 
 INSERT INTO Equipment (Id, ParentEquipmentId, EquipmentTypeId, ManufacturerId, ModelId, RoomId, TransformId, Nom, PrefabKey, SerialNumber, PurchaseDate)
 VALUES 
-('1', NULL, @TypeSpindle, @Mfr, @Model, 'room-001', @TransformId1, 'SpindleA1', 'Spindle_Prefab', 'Test', '2025-07-11'),
-('2', NULL, @TypeLathe, @Mfr, @Model, 'room-001', @TransformId2, 'LatheA2', 'Lathe_Prefab', 'Test', '2025-07-11'),
-('3', NULL, @TypeGate, @Mfr, @Model, 'room-001', @TransformId3, 'A1BlastGate', 'A1BlastGate_Prefab', 'Test', '2025-07-11'),
-('4', NULL, @TypeGate, @Mfr, @Model, 'room-001', @TransformId4, 'A2BlastGate', 'A2BlastGate_Prefab', 'Test', '2025-07-11');
+('8', NULL, @TypeSpindle, @Mfr, @Model, 'room-001', @TransformId1, 'SpindleA1', 'Spindle_Prefab', 'Test', '2025-07-11'),
+('9', NULL, @TypeLathe, @Mfr, @Model, 'room-001', @TransformId2, 'LatheA2', 'Lathe_Prefab', 'Test', '2025-07-11'),
+('10', NULL, @TypeGate, @Mfr, @Model, 'room-001', @TransformId3, 'A1BlastGate', 'A1BlastGate_Prefab', 'Test', '2025-07-11'),
+('11', NULL, @TypeGate, @Mfr, @Model, 'room-001', @TransformId4, 'A2BlastGate', 'A2BlastGate_Prefab', 'Test', '2025-07-11');
 
 DECLARE @TypeToolStatus INT = (SELECT Id FROM Type WHERE Nom = 'EquipmentMode');
 DECLARE @TypeGateStatus INT = (SELECT Id FROM Type WHERE Nom = 'DoorState');
 
 INSERT INTO Variable (Nom, TypeId, EquipmentId)
-VALUES ('A1ToolStatus', @TypeToolStatus, '1');
+VALUES ('A1ToolStatus', @TypeToolStatus, '8');
 DECLARE @VarA1ToolStatus INT = SCOPE_IDENTITY();
 
 INSERT INTO StrValue (VariableId, Value, Timestamp)
@@ -69,7 +69,7 @@ INSERT INTO OpenFactoryLink (VariableId, AssetUuid, DataItemId)
 VALUES (@VarA1ToolStatus, 'IVAC', 'A1ToolPlus');
 
 INSERT INTO Variable (Nom, TypeId, EquipmentId)
-VALUES ('A2ToolStatus', @TypeToolStatus, '2');
+VALUES ('A2ToolStatus', @TypeToolStatus, '9');
 DECLARE @VarA2ToolStatus INT = SCOPE_IDENTITY();
 
 INSERT INTO StrValue (VariableId, Value, Timestamp)
@@ -79,7 +79,7 @@ INSERT INTO OpenFactoryLink (VariableId, AssetUuid, DataItemId)
 VALUES (@VarA2ToolStatus, 'IVAC', 'A2ToolPlus');
 
 INSERT INTO Variable (Nom, TypeId, EquipmentId)
-VALUES ('A1BlastGateStatus', @TypeGateStatus, '3');
+VALUES ('A1BlastGateStatus', @TypeGateStatus, '10');
 DECLARE @VarA1BlastGate INT = SCOPE_IDENTITY();
 
 INSERT INTO StrValue (VariableId, Value, Timestamp)
@@ -89,7 +89,7 @@ INSERT INTO OpenFactoryLink (VariableId, AssetUuid, DataItemId)
 VALUES (@VarA1BlastGate, 'IVAC', 'A1BlastGate');
 
 INSERT INTO Variable (Nom, TypeId, EquipmentId)
-VALUES ('A2BlastGateStatus', @TypeGateStatus, '4');
+VALUES ('A2BlastGateStatus', @TypeGateStatus, '11');
 DECLARE @VarA2BlastGate INT = SCOPE_IDENTITY();
 
 INSERT INTO StrValue (VariableId, Value, Timestamp)

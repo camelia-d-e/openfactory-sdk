@@ -13,7 +13,6 @@ class InsertTypeFactory:
         type_convention = {}
         with open('type_convention.json') as f:
             type_convention = json.load(f)
-            print(type_convention)
             
         if type in type_convention.get('str'):
             return InsertTypeStr()
