@@ -1,16 +1,17 @@
 # Guide Utilisateur – OpenFactory SDK
-Guide pour l’installation, la configuration et l’utilisation du SDK OpenFactory pour simuler ou connecter des appareils industriels via MTConnect et déployer des applications d’analyse.
+Guide pour l’installation, la configuration et l’utilisation du SDK OpenFactory pour simuler ou connecter des appareils industriels via MTConnect et déployer des applications.
 
 ## Prérequis
 Avant de commencer, il faut s'assurer d’avoir les éléments suivants installés :
 - Docker Desktop
-- WSL v2 (si sur Windows)
+- WSL v2 (pour Windows)
 - Ubuntu activé dans Docker
-→ Paramètres → Ressources → Intégration WSL → Activer Ubuntu (si sur Windows)
+→ Paramètres → Ressources → Intégration WSL → Activer Ubuntu (pour Windows)
+- Le repo clôné dans le disque dur virtuel Linux (pour Windows)
 
 ## Configuration de l’environnement
 ### Étape 1 : Modifier devcontainer.json
-Ajouter les lignes suivantes dans la section features du fichier devcontainer.json si elles ne sont pas déjà là:
+Ajouter les lignes suivantes dans la section features du fichier devcontainer.json **si elles ne sont pas déjà là**:
 ```
 "features": {
   "docker-in-docker": {
@@ -21,21 +22,29 @@ Ajouter les lignes suivantes dans la section features du fichier devcontainer.js
   }
 }
 ```
+[devcontainer.json](.devcontainer/devcontainer.json)
 
 ### Étape 2 : Ouvrir le projet dans VSCode
-Une notification « Reopen in container » devrait apparaître. Cliquer dessus pour ouvrir le projet dans un container Docker.
+Une notification **« Reopen in container »** devrait apparaître. Cliquer dessus pour ouvrir le projet dans un container Docker.
 
 ## Lancer OpenFactory
 Pour démarrer les containers d’infrastructure OpenFactory :
 `spinup`
 
+## Arrêter OpenFactory
+Pour arrêter les containers d’infrastructure OpenFactory :
+`teardown`
 
+## Accéder à la base de données ksqldb
+Pour effectuer des queries et visualiser l'état de la base de données ksqldb (streams des assets, etc.):
+`ksqldb`
 
 ## Ajouter et lancer un appareil MTConnect
 Fichiers requis
 - Fichier XML : structure de l’appareil (conforme à MTConnect Standard)
 - Fichier YML : configuration OpenFactory de l’appareil
-### Exemple de fichier YML
+
+### Strcuture du fichier YML
 ```
 devices:
   my-device:
@@ -60,10 +69,16 @@ devices:
 ```
 L'agent est celui qui achemine l'information de l'équipement à OpenFactory. Le supervisor sert à envoyer des commandes à l'équipement par protocole OPC-UA et n'est pas toujours nécessaire (comme dans le cas de la CNC).
 
+#### Exemples de fichiers .yml
+- [Fichier .yml pour le iVAC](/openfactory/adapter/ivac.yml)
+- [Fichier .yml pour la CNC](/openfactory/adapter/cnc.yml)
+
+
 ### Lancer l’appareil
 `$openfactory-sdk device up <CHEMIN_VERS_FICHIER_YML>`
 
 ### Arrêter l'appareil
+`$openfactory-sdk device down <CHEMIN_VERS_FICHIER_YML>`
 
 ## Simuler un appareil iVAC ou CNC
 Si l’appareil physique iVAC n’est pas disponible, il est possible de simuler l’adaptateur dans
@@ -73,21 +88,25 @@ Si l’appareil physique iVAC n’est pas disponible, il est possible de simuler
 
 Il faut s'assurer que l’adresse IP utilisée dans le fichier de configuration .yml de l'équipement (dans `openfactory/adapter/device.yml`) correspond à celle du conteneur de l'équipement simulé. Cette adresse est définie dans le fichier de configuration .yml de l'adapteur virtuel (dans `openfactory/virtual/<EQUIPEMENT_SIMULÉ>/vdevice.yml`).
 
-## Ajouter et lancer une application OpenFactory
+## Ajouter et lancer des applications OpenFactory
 Fichiers requis
-- Fichier YML : configuration de l’application
+- Fichier YML : configuration des applications
 - Dockerfile : pour construire l’image
 - Code de l’application : doit hériter de la classe Asset
-### Exemple de fichier YML
+### Structure du fichier YML
 ```
 apps:
   app_name:
     uuid: <UUID_APP>
     image: <NOM_IMAGE>
 ```
+[Exemple de fichier .yml](/openfactory/apps/apps.yml)
 
-#### Lancer l’application
+#### Lancer les applications
 `$openfactory-sdk app up <CHEMIN_VERS_FICHIER_YML>`
+
+#### Arrêter les applications
+`$openfactory-sdk app down <CHEMIN_VERS_FICHIER_YML>`
 
 ### OpenFactory-API
 Cette application OpenFactory sert de couche de service pour accéder aux données en temps réel à partir des assets déployés sur OpenFactory. 
