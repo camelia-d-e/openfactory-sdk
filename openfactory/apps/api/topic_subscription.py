@@ -1,7 +1,8 @@
 import threading
 import json
-from kafka import KafkaConsumer
 from typing import Callable, Optional, Dict, Any
+from kafka import KafkaConsumer
+
 
 class TopicSubscriber:
     
@@ -44,11 +45,11 @@ class TopicSubscriber:
         print(f"Started subscription to topic: {topic}")
 
     def _consume_kafka_topic(self, 
-                            topic: str, 
-                            kafka_group_id: str,
-                            on_message: Callable[[Dict[str, Any]], None],
-                            bootstrap_servers: str,
-                            message_filter: Optional[Callable[[Dict[str, Any]], bool]] = None) -> None:
+                        topic: str, 
+                        kafka_group_id: str,
+                        on_message: Callable[[str, Dict[str, Any]], None],
+                        bootstrap_servers: str,
+                        message_filter: Optional[Callable[[Dict[str, Any]], bool]] = None) -> None:
         """Internal function to consume messages from a topic"""
         try:
             consumer = KafkaConsumer(
@@ -62,16 +63,15 @@ class TopicSubscriber:
             )
             
             self._active_consumers[topic] = consumer
-            
+
             for message in consumer:
                 if self._stop_flags[topic].is_set():
                     break
-                    
                 if message.value is not None:
-                    if message_filter and not message_filter(message.value):
+                    if message_filter and not message_filter(message.key):
                         continue
                     
-                    on_message(message.value)
+                    on_message(message.key, message.value)
                     
         except Exception as e:
             print(f"Error in topic consumer for {topic}: {e}")

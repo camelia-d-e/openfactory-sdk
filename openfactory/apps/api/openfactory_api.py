@@ -16,6 +16,8 @@ from openfactory.apps import OpenFactoryApp
 from openfactory.kafka import KSQLDBClient
 from openfactory.assets import Asset
 
+from topic_subscription import TopicSubscriber
+
 class Command:
     def __init__(self, name: str, args):
         self.name = name
@@ -67,6 +69,7 @@ class OpenFactoryAPI(OpenFactoryApp):
         self.device_topics = {}
         self.ksqlClient = ksqlClient
         self.connection_manager = ConnectionManager()
+        self.topic_subscriber = TopicSubscriber()
         self.running = True
         self.loop = None
         self.event_processing_task = None
@@ -102,8 +105,8 @@ class OpenFactoryAPI(OpenFactoryApp):
                 self.topic_subscriber.subscribe_to_kafka_topic(
                         topic=device_stream_topic,
                         kafka_group_id=f'api_device_stream_group_{device_uuid}',
-                        on_message=self.on_event,
-                        message_filter=lambda msg: msg.get('device_uuid') == device_uuid
+                        on_message=self.on_message,
+                        message_filter=lambda key: key == device_uuid
                     )
                 self.device_topics[device_uuid] = device_stream_topic
 
@@ -189,11 +192,10 @@ class OpenFactoryAPI(OpenFactoryApp):
                         if not queue.empty():
                             change = queue.get()
                             message = {
-                                "event": "device_change",
                                 "asset_uuid": device_uuid,
                                 "data": dict(change)
                             }
-                            print(f"ello voici le message: {message}")
+
                             await self.connection_manager.send_to_device_connections(device_uuid, message)
                     await asyncio.sleep(0.1)
                 except Exception as e:
@@ -207,15 +209,17 @@ class OpenFactoryAPI(OpenFactoryApp):
         try:
             query = (
                 f"CREATE STREAM IF NOT EXISTS device_stream_{device_uuid} "
-                f"WITH (KAFKA_TOPIC='monitored_devices_events', PARTITIONS=1) AS "
-                f"SELECT ASSET_UUID AS KEY, ID, VALUE, ROWTIME AS TIMESTAMP FROM ASSETS_STREAM WHERE ASSET_UUID = '{device_uuid}' "
-                f"AND TYPE IN ('Events', 'Condition', 'Samples') AND VALUE != 'UNAVAILABLE'"
+                f"WITH (KAFKA_TOPIC='{device_uuid}_monitoring', PARTITIONS=1) AS "
+                f"SELECT ASSET_UUID AS KEY, ID, VALUE, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd''T''HH:mm:ss[.nnnnnnn]', 'Canada/Eastern') AS TIMESTAMP "
+                f"FROM ASSETS_STREAM WHERE ASSET_UUID = '{device_uuid}' "
+                f"AND TYPE IN ('Events', 'Condition', 'Samples') AND VALUE != 'UNAVAILABLE' "
                 f"EMIT CHANGES;"
             )
-            self.ksqlClient.query(query)
-            return f'device_stream_{device_uuid}'
+            print(query)
+            self.ksqlClient.statement_query(query)
+            return f'{device_uuid}_monitoring'
         except Exception as e:
-            print(f"Error getting device dataitems for {device_uuid}: {e}")
+            print(f"Error creating stream for {device_uuid}: {e}")
 
     def get_all_devices(self) -> List[str]:
         try:
@@ -327,7 +331,7 @@ class OpenFactoryAPI(OpenFactoryApp):
     def add_duration_updates(self, msg_value):
         query = (
             f"SELECT IVAC_POWER_KEY, TOTAL_DURATION_SEC FROM IVAC_POWER_STATE_TOTALS "
-            f"WHERE IVAC_POWER_KEY LIKE '{msg_value['id']}%';"
+            f"WHERE IVAC_POWER_KEY LIKE '{msg_value['ID']}%';"
         )
         df = self.ksqlClient.query(query)
         msg_value['durations'] = dict(zip(df.IVAC_POWER_KEY.str[11:].tolist(), df.TOTAL_DURATION_SEC.tolist())) if 'IVAC_POWER_KEY' in df.columns and 'TOTAL_DURATION_SEC' in df.columns else {}
@@ -412,17 +416,6 @@ def run_websocket_api():
     except KeyboardInterrupt:
         print("Shutting down WebSocket API...")
         app_instance.running = False
-        
-class AssetKafkaMessagesCallback(Protocol):
-    """
-    Interface for a callback used to handle Kafka asset messages.
-
-    Args:
-        msg_key (str): The key of the Kafka message (the asset UUID).
-        msg_value (dict): The JSON-decoded value of the Kafka message.
-    """
-    def __call__(self, msg_key: str, msg_value: dict) -> None:
-        """ Event messages callback interface method. """
 
 if __name__ == "__main__":
     run_websocket_api()

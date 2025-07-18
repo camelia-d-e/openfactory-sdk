@@ -31,6 +31,8 @@ ENV APPLICATION_MANUFACTURER=${APPLICATION_MANUFACTURER}
 
 WORKDIR /ofa
 COPY openfactory_api.py /ofa
+COPY topic_subscription.py /ofa
+COPY __init__.py /ofa
 RUN chown -R appuser:appuser /ofa
 
 USER ${UNAME}
