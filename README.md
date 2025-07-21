@@ -116,7 +116,18 @@ apps:
 Cette application OpenFactory sert de couche de service pour accéder aux données en temps réel à partir des assets déployés sur OpenFactory. 
 #### S'abonner à un device
 En se connectant au endpoint `ws://ofa-api:8000/ws/devices/<device_uuid>`, l'app permet à un client WebSocket de recevoir des updates en temps réel pour le device demandé (qui correspond à un asset OpenFactory). L'application s'occupe de créer un stream dérivé dédié à cet asset lors de la connection d'un nouveau client.
-
+#### Format d'un message 
+```
+{
+  'asset_uuid': 'IVAC',
+  'data': {
+            'ID': 'A2BlastGate',
+            'VALUE': 'CLOSED',
+            'TIMESTAMP': '2025-07-21T09:14:49.829000000'
+          }
+}
+```
+*ID correspond au dataitem_id
 
 
 
