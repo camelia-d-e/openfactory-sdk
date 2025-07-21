@@ -301,25 +301,27 @@ function setupEventSource() {
 
     eventSource.onmessage = (event) => {
         try {
-            const data = JSON.parse(event.data);
-            const event = data['event'] || 'device_change'
-            if(event !== 'ping'){
-                console.log("Received update:", data);
+            const device_update = JSON.parse(event.data);
+            if(device_update.event){
+                if(device_update.event !== 'ping'){
+                    console.log("Received update:", device_update);
+                }
+                if (device_update.event === "connection_established") {
+                    initializeUI(device_update.data_items);
+                }
+                if (device_update.event === "simulation_mode_updated") {
+                if (device_update.success) {
+                    saveSimulationMode(device_update.value);
+                } else {
+                    console.error("Failed to update simulation mode:", device_update.error);
+                    const checkbox = document.querySelector('.switch input[type="checkbox"]');
+                    checkbox.checked = !checkbox.checked;
+                }
+                }
             }
-            if (event === "device_change" && data.data) {
-                updateDeviceUI(data.data);
-            } else if (data.event === "connection_established") {
-                initializeUI(data.data_items);
+            else{
+                updateDeviceUI(device_update.data);
             }
-            if (event === "simulation_mode_updated") {
-            if (data.success) {
-                saveSimulationMode(data.value);
-            } else {
-                console.error("Failed to update simulation mode:", data.error);
-                const checkbox = document.querySelector('.switch input[type="checkbox"]');
-                checkbox.checked = !checkbox.checked;
-            }
-        }
         } catch (e) {
             console.error("Error processing event:", e);
         }
@@ -333,9 +335,12 @@ function setupEventSource() {
 }
 
 function updateDeviceUI(updateData) {
-    const { id, value, durations } = updateData;
+    const id = updateData.ID;
+    const value = updateData.VALUE;
+    const durations = updateData.durations;
     
-    const valueElem = document.getElementById(id);
+    const valueElem = document.getElementById(id)
+
     if (valueElem) {
         if (id.includes('Tool')) {
             valueElem.style.color = (value === "ON" ? "#6ed43f" : "red");
