@@ -215,11 +215,18 @@ class OpenFactoryAPI(OpenFactoryApp):
                 f"AND TYPE IN ('Events', 'Condition', 'Samples') AND VALUE != 'UNAVAILABLE' "
                 f"EMIT CHANGES;"
             )
-            print(query)
             self.ksqlClient.statement_query(query)
             return f'{device_uuid}_monitoring'
         except Exception as e:
             print(f"Error creating stream for {device_uuid}: {e}")
+
+    def drop_stream(self, device_uuid: str) -> None:
+        """Drop stream associated to a specific device."""
+        try:
+            query = "DROP STREAM IF EXISTS device_stream_{device_uuid};"
+            self.ksqlClient.statement_query(query)
+        except Exception as e:
+            print(f"Error dropping stream for {device_uuid}: {e}")
 
     def get_all_devices(self) -> List[str]:
         try:
@@ -271,6 +278,14 @@ class OpenFactoryAPI(OpenFactoryApp):
                     "event": "simulation_mode_updated",
                     "success": True,
                     "value": args
+                }))
+            elif message.get("action") == "drop":
+                device_uuid = message.get("asset_uuid")
+                self.drop_stream(device_uuid)
+
+                await websocket.send(json.dumps({
+                    "event": "stream_dropped",
+                    "success": True
                 }))
             else:
                 await websocket.send(json.dumps({"error": "Unknown method"}))
@@ -373,7 +388,7 @@ class OpenFactoryAPI(OpenFactoryApp):
                 break
 
 def run_websocket_api():
-    """Main function to run the WebSocket API - matching FastAPI version structure"""
+    """Main function to run the WebSocket API"""
     app_instance = OpenFactoryAPI(
         app_uuid='OFA-API',
         ksqlClient=KSQLDBClient("http://ksqldb-server:8088"),
