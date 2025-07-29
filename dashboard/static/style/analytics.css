@@ -29,6 +29,7 @@
     justify-content: center;
     gap: 15px;
     flex-wrap: wrap;
+    height: fit-content;
 }
 
 .pie-slice {
@@ -71,6 +72,7 @@
 
 .container {
     max-width: 100%;
+    max-height: fit-content;
     margin: 0;
 }
 

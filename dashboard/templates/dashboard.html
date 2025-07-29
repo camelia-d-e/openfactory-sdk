@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="../static/style/dashboard.css">
     <script src="https://unpkg.com/jsplumb@2.15.6/dist/js/jsplumb.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 </head>
 <div id="jsplumb-container" style="position: relative;">
 <div class="dashboard">
@@ -119,6 +122,42 @@
                     <div class="media-content">
                         <p class="title is-6 has-text-centered">Dust Collector</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif "DUSTTRAK" in device_uuid%}
+    <div class="particle-charts-container">
+        <div class="chart-grid">
+            <div class="concentration-chart-section">
+                <h3 class="chart-title">PM1 Concentration</h3>
+                <canvas id="pm1Chart" width="400" height="300"></canvas>
+                <div class="concentration-display">
+                    Current: <span id="pm1_concentration">-- µg/m³</span>
+                </div>
+            </div>
+            
+            <div class="concentration-chart-section">
+                <h3 class="chart-title">PM2.5 Concentration</h3>
+                <canvas id="pm25Chart" width="400" height="300"></canvas>
+                <div class="concentration-display">
+                    Current: <span id="pm2_5_concentration">-- µg/m³</span>
+                </div>
+            </div>
+            
+            <div class="concentration-chart-section">
+                <h3 class="chart-title">PM4 Concentration</h3>
+                <canvas id="pm4Chart" width="400" height="300"></canvas>
+                <div class="concentration-display">
+                    Current: <span id="pm4_concentration">-- µg/m³</span>
+                </div>
+            </div>
+            
+            <div class="concentration-chart-section">
+                <h3 class="chart-title">PM10 Concentration</h3>
+                <canvas id="pm10Chart" width="400" height="300"></canvas>
+                <div class="concentration-display">
+                    Current: <span id="pm10_concentration">-- µg/m³</span>
                 </div>
             </div>
         </div>

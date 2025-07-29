@@ -139,6 +139,63 @@
     color: #6ed43f;
 }
 
+.particle-charts-container {
+    padding: 2vw;
+    width: 1000px;
+    height: 600px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: clamp(15px, 3vw, 40px);
+    max-height: 90vh;
+    max-width: 100%;
+    margin: 0 auto;
+    width: 1000px;
+}
+
+.concentration-chart-section {
+    background: white;
+    border-radius: clamp(6px, 1vw, 12px);
+    padding: clamp(12px, 3vw, 15px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e1e1e1;
+    max-height: fit-content;
+    display: flex;
+    flex-direction: column;
+    width: 450px;
+    height: 300px;
+}
+
+.chart-title {
+    font-size: clamp(0.9rem, 1vw, 1.1rem);
+    font-weight: bold;
+    margin-bottom: clamp(10px, 2vw, 20px);
+    text-align: center;
+    color: #333;
+    flex-shrink: 0;
+}
+
+.concentration-display {
+    margin-top: clamp(8px, 1.5vw, 15px);
+    text-align: center;
+    font-weight: bold;
+    font-size: clamp(0.8rem, 1vw, 1rem);
+    color: #000;
+    flex-shrink: 0;
+}
+
+.concentration-chart-section canvas {
+    flex-grow: 1;
+    width: 100% !important;
+    height: auto !important;
+    max-height: 200px;
+    min_width:
+}
+
 @media (max-width: 900px) {
     .dashboard {
         flex-direction: column;

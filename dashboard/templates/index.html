@@ -31,7 +31,7 @@
         {% set device = device_dataitems if device_dataitems is defined else [] %}
         {% set device_uuid = device_uuid if device_uuid is defined else '' %}
         {% include "dashboard.html" %}
-        {% if device_uuid %}
+        {% if device_uuid and device_uuid == 'IVAC'%}
             {% set dataitems_stats = dataitems_stats %}
             {% include "analytics.html" %}
         {% endif %}
