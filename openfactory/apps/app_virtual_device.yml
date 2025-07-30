@@ -1,6 +1,0 @@
-apps:
-  ivac_tool_monitoring::
-    uuid: VIRTUAL-IVAC-TOOL-MONITORING-APP
-    image: ivac-tool-monitoring-app
-    environment:
-      - IVAC_SYSTEM_UUID=VIRTUAL-IVAC-TOOL-PLUS
