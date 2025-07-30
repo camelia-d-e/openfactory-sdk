@@ -1,10 +1,10 @@
 devices:
   my-device:
-    uuid: DUST-TRAK
+    uuid: DUSTTRAK
 
     agent:
       port: 5002
       device_xml: dust_trak.xml
       adapter:
-        ip: 10.68.14.165
+        ip: 10.68.14.127
         port: 7880
