@@ -14,7 +14,7 @@
             <ul>
 
                 {% for device in all_devices %}
-                <li><a href="{{ url_for('device_detail', device_uuid=device) }}">{{device}}</a></li>
+                <li class="tab" id="{{device}}_tab"><a href="{{ url_for('device_detail', device_uuid=device) }}" @click="tabSelected({{device}})">{{device}}</a></li>
                 {% endfor %}
             </ul>
         </li>

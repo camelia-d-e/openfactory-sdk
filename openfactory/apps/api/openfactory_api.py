@@ -219,6 +219,7 @@ class OpenFactoryAPI(OpenFactoryApp):
             return f'{device_uuid}_monitoring'
         except Exception as e:
             print(f"Error creating stream for {device_uuid}: {e}")
+            return ''
 
     def drop_stream(self, device_uuid: str) -> None:
         """Drop stream associated to a specific device."""
@@ -229,13 +230,17 @@ class OpenFactoryAPI(OpenFactoryApp):
             print(f"Error dropping stream for {device_uuid}: {e}")
 
     def get_all_devices(self) -> List[str]:
+        """Get all devices from the database."""
+        devices = []
         try:
-            query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Device';"
+            query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE LIKE '%Agent';"
             df = self.ksqlClient.query(query)
-            return df.ASSET_UUID.tolist() if 'ASSET_UUID' in df.columns else []
+            for asset in df.ASSET_UUID.tolist():
+                devices.append(asset[:-6])  # Remove the '-Agent' suffix
+            return devices
         except Exception as e:
             print(f"Error getting devices: {e}")
-            return []
+            return devices
 
     def get_device_dataitems(self, device_uuid: str) -> dict:
         try:
@@ -339,6 +344,8 @@ class OpenFactoryAPI(OpenFactoryApp):
             device_uuid = msg_key
             if(device_uuid == 'IVAC'):
                 self.add_duration_updates(msg_value)
+            elif(device_uuid == 'DUSTTRAK'):
+                self.add_avg_data(msg_value)
             self.device_queues[device_uuid].put(msg_value)
         except Exception as e:
             print(f"Error processing device event: {e}")
@@ -351,7 +358,26 @@ class OpenFactoryAPI(OpenFactoryApp):
         df = self.ksqlClient.query(query)
         msg_value['durations'] = dict(zip(df.IVAC_POWER_KEY.str[11:].tolist(), df.TOTAL_DURATION_SEC.tolist())) if 'IVAC_POWER_KEY' in df.columns and 'TOTAL_DURATION_SEC' in df.columns else {}
 
-    async def app_event_loop_stopped(self) -> None:
+    def add_avg_data(self, msg_value):
+        try:
+            query = (
+                f"SELECT AVERAGE_VALUE, TIMESTAMP FROM {msg_value['ID']}_moving_average "
+                f"WHERE timestamp LIKE '{msg_value['TIMESTAMP'][:-10]}%';"
+            )
+            df = self.ksqlClient.query(query)
+            if 'AVERAGE_VALUE' in df.columns and 'TIMESTAMP' in df.columns and not df['AVERAGE_VALUE'].empty and not df['TIMESTAMP'].empty:
+                msg_value['avg_value'] = {
+                    'value': df['AVERAGE_VALUE'].tolist()[0],
+                    'timestamp': df['TIMESTAMP'].tolist()[0]
+                }
+            else:
+                msg_value['avg_value'] = {}
+
+
+        except Exception as e:
+            print(f"Error adding avg values for {msg_value['ID']}: {e}")
+        
+    async def app_event_loop_stopped(self):
         print("Stopping API consumer thread...")
         self.running = False
         

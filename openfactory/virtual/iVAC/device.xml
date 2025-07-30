@@ -2,12 +2,10 @@
   <Devices>
     <Device uuid="IVAC" id="ivac" name="iVAC Tool Plus">
 
-      <!-- General information -->
       <Description>
          iVAC Tool Plus - Dust collector auto sensor that detects when a power tool is turned on
       </Description>
 
-      <!-- Data Items -->
       <DataItems>
         <DataItem category="EVENT" id="avail" name="avail" type="AVAILABILITY"/>
         <DataItem category="EVENT" id="A1ToolPlus" type="EQUIPMENT_MODE" subType="POWERED"/>
