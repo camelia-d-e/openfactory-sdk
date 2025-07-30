@@ -1,0 +1,10 @@
+devices:
+  my-device:
+    uuid: WTVB01
+
+    agent:
+      port: 5003
+      device_xml: wtvb01.xml
+      adapter:
+        ip: 10.68.14.127
+        port: 7881
