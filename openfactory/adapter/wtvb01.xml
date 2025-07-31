@@ -15,7 +15,7 @@
           <Description>Temperature measurement sensor</Description>
           <DataItems>
             <DataItem category="SAMPLE" id="temp" name="Temperature" type="TEMPERATURE" 
-                      units="CELSIUS" nativeUnits="CELSIUS" subType="ACTUAL"/>
+                      units="CELSIUS"/>
           </DataItems>
         </Sensor>
         
@@ -23,31 +23,31 @@
           <Description>Multi-axis vibration monitoring sensor</Description>
           <DataItems>
             <DataItem category="SAMPLE" id="dx" name="DisplacementX" type="DISPLACEMENT" 
-                      units="MILLIMETER" nativeUnits="MILLIMETER" subType="ACTUAL"/>
+                      units="MILLIMETER" nativeUnits="MICROMETER"/>
             
             <DataItem category="SAMPLE" id="dy" name="DisplacementY" type="DISPLACEMENT" 
-                      units="MILLIMETER" nativeUnits="MILLIMETER" subType="ACTUAL"/>
+                      units="MILLIMETER" nativeUnits="MICROMETER"/>
             
             <DataItem category="SAMPLE" id="dz" name="DisplacementZ" type="DISPLACEMENT" 
-                      units="MILLIMETER" nativeUnits="MILLIMETER" subType="ACTUAL"/>
+                      units="MILLIMETER" nativeUnits="MICROMETER"/>
             
             <DataItem category="SAMPLE" id="hx" name="FrequencyX" type="FREQUENCY" 
-                      units="HERTZ" nativeUnits="HERTZ" subType="ACTUAL"/>
+                      units="HERTZ" nativeUnits="HERTZ"/>
             
             <DataItem category="SAMPLE" id="hy" name="FrequencyY" type="FREQUENCY" 
-                      units="HERTZ" nativeUnits="HERTZ" subType="ACTUAL"/>
+                      units="HERTZ" nativeUnits="HERTZ"/>
             
             <DataItem category="SAMPLE" id="hz" name="FrequencyZ" type="FREQUENCY" 
-                      units="HERTZ" nativeUnits="HERTZ" subType="ACTUAL"/>
+                      units="HERTZ" nativeUnits="HERTZ"/>
             
-            <DataItem category="SAMPLE" id="acc_x" name="VelocityX" type="ACCELERATION" 
-                      units="METER/SECOND^2" nativeUnits="G" subType="ACTUAL"/>
+            <DataItem category="SAMPLE" id="vx" name="VelocityX" type="VELOCITY" 
+                      units="MILLIMETER/SECOND"/>
             
-            <DataItem category="SAMPLE" id="acc_y" name="VelocityY" type="ACCELERATION" 
-                      units="METER/SECOND^2" nativeUnits="G" subType="ACTUAL"/>
+            <DataItem category="SAMPLE" id="vy" name="VelocityY" type="VELOCITY" 
+                      units="MILLIMETER/SECOND"/>
             
-            <DataItem category="SAMPLE" id="acc_z" name="VelocityZ" type="ACCELERATION" 
-                      units="METER/SECOND^2" nativeUnits="G" subType="ACTUAL"/>
+            <DataItem category="SAMPLE" id="vz" name="VelocityZ" type="VELOCITY" 
+                      units="MILLIMETER/SECOND"/>
 
             <DataItem category="SAMPLE" id="angle_x" name="AngleX" type="ANGLE" 
                       units="DEGREE" nativeUnits="DEGREE" subType="ACTUAL"/>
