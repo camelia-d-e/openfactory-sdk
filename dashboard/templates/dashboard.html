@@ -59,26 +59,6 @@
     </div>
 
     <div class="gate-column">
-            <! -- temp gate for visual purposes -- !> 
-            <div class="gate-card" id="card-A1BlastGate">
-                <div class="gate-card-image">
-                    <figure class="gate-image">
-                        <img
-                            src="../static/icons/blast-gate-open.png"
-                            alt="Tool icon"
-                            width="124"
-                            height="124"
-                        />
-                    </figure>
-                </div>
-                <div class="gate-card-content">
-                    <div class="media">
-                        <div class="media-content">
-                            <p class="title is-6 has-text-centered">A1BlastGate</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
         {% for dataitem in device %}
             {% if dataitem['type'] == 'gate'%}
             <div class="gate-card" id="card-{{ dataitem['id'] }}">
