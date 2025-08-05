@@ -28,6 +28,10 @@ def main(connection, server: str = None):
             if os.path.exists(script_path):
                 execute_sql_script(connection, script_path, "iVAC insertion script")
 
+            script_path = os.path.join(os.path.dirname(__file__), 'dust_trak_insert.sql')
+            if os.path.exists(script_path):
+                execute_sql_script(connection, script_path, "DUSTTRAK insertion script")
+
             script_path = os.path.join(os.path.dirname(__file__), 'test.sql')
             if os.path.exists(script_path):
                 execute_sql_script(connection, script_path, "Test script")              

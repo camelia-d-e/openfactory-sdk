@@ -66,7 +66,6 @@ CREATE TABLE Equipment (
 	ManufacturerId int FOREIGN KEY REFERENCES Manufacturer(Id),
 	ModelId int FOREIGN KEY REFERENCES Model(Id),
 	RoomId NVARCHAR(255) FOREIGN KEY REFERENCES Room(Id),
-	TransformId int FOREIGN KEY REFERENCES Transform(Id),
 	Nom NVARCHAR(255),
 	PrefabKey NVARCHAR(255),
 	SerialNumber NVARCHAR(255),
