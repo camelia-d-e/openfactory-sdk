@@ -159,8 +159,8 @@ class Virtual_iVACToolPlus(MTCDevice):
     LED_MODES = ['NORMAL', 'FAULT', 'WARNING']
 
     def __init__(self):
-        self._tool_states = {'A1ToolPlus': 'OFF', 'A2ToolPlus': 'OFF'}
-        self._gates_states = {'A1BlastGate': 'OPEN', 'A2BlastGate': 'CLOSED'}
+        self._tool_states = {'A2ToolPlus': 'OFF', 'A3ToolPlus': 'OFF'}
+        self._gates_states = {'A2BlastGate': 'OPEN', 'A3BlastGate': 'CLOSED'}
         self._simulation_mode = False
         self._buzzer_status = 'WARNING'
 
@@ -204,10 +204,10 @@ class Virtual_iVACToolPlus(MTCDevice):
             self._gates_states[tool[:-8]+'BlastGate'] = 'CLOSED' if self._tool_states[tool] == 'OFF' else 'OPEN'
 
         return {
-            'A1ToolPlus': self._tool_states['A1ToolPlus'],
             'A2ToolPlus': self._tool_states['A2ToolPlus'],
-            'A1BlastGate': self._gates_states['A1BlastGate'],
+            'A3ToolPlus': self._tool_states['A3ToolPlus'],
             'A2BlastGate': self._gates_states['A2BlastGate'],
+            'A3BlastGate': self._gates_states['A3BlastGate'],
             'Buzzer': self._buzzer_status,  # TODO buzzer state is always delayed (will be the status of previous tool state)...
         }
 
