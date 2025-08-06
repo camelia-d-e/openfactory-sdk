@@ -4,23 +4,25 @@ import os
 import time
 from init_db.build_bd import main as init_db
 from insert_type_strategy_factory import InsertTypeFactory
+from dotenv import load_dotenv
 
 class DatabaseManager:
     """Connects to and executes queries in database"""
 
-    def __init__(self, database_name, user, password, server=None, max_retries=5, retry_delay=5):
-        self.database_name = database_name
-        self.user = user
-        self.password = password
-        self.server = server or os.getenv("SQL_SERVER", "localhost")
-        self.max_retries = max_retries
-        self.retry_delay = retry_delay
+    def __init__(self):
+        load_dotenv()
+        self.server = os.getenv("SERVER", "")
+        self.database_name = os.getenv("DATABASE")
+        self.user = os.getenv("USER")
+        self.password = os.getenv("PASSWORD")
+        self.max_retries = 5
+        self.retry_delay = 5
         self.connection = None
         self.create_database_if_not_exists() ##Temporary fix to ensure database exists before connecting
         if not self.connect():
             raise ConnectionError("Failed to connect to the database after retries.")
         try:
-            init_db(self.connection, server)
+            init_db(self.connection, self.server)
             print("Database schema initialized successfully")
         except Exception as e:
             print(f"Database schema initialization failed: {e}")

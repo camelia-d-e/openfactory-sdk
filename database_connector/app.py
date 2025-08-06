@@ -1,3 +1,4 @@
+import json
 import os
 import asyncio
 from message_router import MessageRouter
@@ -5,10 +6,14 @@ from websocket_client import OpenFactoryWebSocketClient
 from database_manager import DatabaseManager
 
 class DatabaseConnectorApp:
-    def __init__(self, database_name, user, password, server, websocket_base_url: str = "ws://ofa-api:8000"):
+    def __init__(self):
         self.assets = []
-        self.websocket_client = OpenFactoryWebSocketClient(websocket_base_url)
-        self.db_manager = DatabaseManager(database_name, user, password, server)
+        curr_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(curr_dir, 'config.json')
+        with open(file_path, 'r', encoding='utf-8') as file:
+            config_data = json.load(file)
+        self.websocket_client = OpenFactoryWebSocketClient(config_data["base_url"] if config_data else "")
+        self.db_manager = DatabaseManager()
     
     async def run(self):
         """Run the application"""
@@ -23,22 +28,12 @@ class DatabaseConnectorApp:
             await self.websocket_client.start(self.assets)
         except KeyboardInterrupt:
             print("\nShutting down app...")
-            self.websocket_client.stop()
+            await self.websocket_client.stop()
             self.db_manager.disconnect()
 
 if __name__ == "__main__":
-    DATABASE_NAME = os.getenv("DATABASE_NAME", "mytest")
-    WEBSOCKETS_URL = os.getenv("WEBSOCKETS_URL", "ws://ofa-api:8000")
-    USER = os.getenv("SQL_USER", "sa")
-    PASSWORD = os.getenv("SQL_PASSWORD", "YourStrong@Passw0rd")
-    SERVER = os.getenv("SQL_SERVER", "localhost")
-    
-    print(f"Connecting to database: {DATABASE_NAME}")
-    print(f"SQL Server: {SERVER}")
-    print(f"WebSocket URL: {WEBSOCKETS_URL}")
-    
     try:
-        app = DatabaseConnectorApp(DATABASE_NAME, USER, PASSWORD, SERVER, WEBSOCKETS_URL)
+        app = DatabaseConnectorApp()
         asyncio.run(app.run())
     except Exception as e:
         print(f"Failed to start application: {e}")

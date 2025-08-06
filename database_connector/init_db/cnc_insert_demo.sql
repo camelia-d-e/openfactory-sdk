@@ -43,14 +43,13 @@ DECLARE @TypeCNC_Spindle INT = (SELECT Id FROM EquipmentType WHERE Nom = 'CNC_Sp
 DECLARE @Mfr INT = (SELECT Id FROM Manufacturer WHERE Nom = 'Test');
 DECLARE @Model INT = (SELECT Id FROM Model WHERE Nom = 'Test');
 
--- Insert Equipment in correct order (parents before children)
+-- Insert Equipment
 INSERT INTO Equipment (Id, ParentEquipmentId, EquipmentTypeId, ManufacturerId, ModelId, RoomId, Nom, PrefabKey, SerialNumber, PurchaseDate)
 VALUES 
 ('1', NULL, @Type, @Mfr, @Model, 'room-001', 'CNC Machine', 'CNC_Prefab', 'Test', '2023-02-15'),
 ('3', NULL, @Type, @Mfr, @Model, 'room-001', 'Robot', 'Robot_Prefab', 'Test', '2023-02-15'),
 ('4', NULL, @TypeCNC_Structure, @Mfr, @Model, 'room-001', 'CNC_Structure', 'CNC_Structure', 'Test', '2025-07-11');
 
--- Insert child equipment that references parent equipment
 INSERT INTO Equipment (Id, ParentEquipmentId, EquipmentTypeId, ManufacturerId, ModelId, RoomId, Nom, PrefabKey, SerialNumber, PurchaseDate)
 VALUES 
 ('2', '1', @Type, @Mfr, @Model, 'room-001', 'CNC Bridge', 'CNC_Bridge_Prefab', 'Test', '2023-02-15'),
