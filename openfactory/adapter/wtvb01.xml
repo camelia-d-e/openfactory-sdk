@@ -49,6 +49,15 @@
             <DataItem category="SAMPLE" id="vz" name="VelocityZ" type="VELOCITY" 
                       units="MILLIMETER/SECOND"/>
 
+            <DataItem category="SAMPLE" id="acc_x" name="AccelerationX" type="ACCELERATION" 
+                      units="MILLIMETER/SECOND^2"/>
+
+            <DataItem category="SAMPLE" id="acc_y" name="AccelerationY" type="ACCELERATION" 
+                      units="MILLIMETER/SECOND^2"/>
+
+            <DataItem category="SAMPLE" id="acc_z" name="AccelerationZ" type="ACCELERATION" 
+                      units="MILLIMETER/SECOND^2"/>
+
             <DataItem category="SAMPLE" id="angle_x" name="AngleX" type="ANGLE" 
                       units="DEGREE" nativeUnits="DEGREE" subType="ACTUAL"/>
             
