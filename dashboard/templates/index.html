@@ -8,7 +8,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.0/css/bulma.min.css">
     <link rel="stylesheet" href="../static/style/main.css">
     <link rel="stylesheet" href="../static/style/switch.css">
-    <script src="../static/script/dashboard.js"></script>
+    <link rel="icon" href="/static/icons/favicon.ico" type="image/x-icon">
+    <script src="../static/script/storage.js"></script>
+    <script src="../static/script/devices.js"></script>
+    <script src="../static/script/charts.js"></script>
+    <script src="../static/script/sse.js"></script>
+    <script src="../static/script/main.js"></script>
 </head>
 <body>
     <header>
@@ -19,7 +24,7 @@
             </div>
             <div class="simulation-mode-switch-section">
                 <label class="switch is-rounded">
-                    <input id="simulationModeToggle" type="checkbox" value="false" checked="" onclick="sendSimulationMode()">
+                    <input id="simulationModeToggle" type="checkbox" value="false" checked="" onclick="dashboard.sseClient.sendSimulationMode('{{device_uuid}}')">
                     <span class="check is-success"></span>
                     <span class="control-label">Simulation Mode</span>
                 </label>
