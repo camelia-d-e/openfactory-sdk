@@ -1,4 +1,3 @@
---mettre ça dans stream dérivé réserve a lenergie par ex.
 -- Create a stream to capture power events for IVAC assets
 CREATE STREAM IF NOT EXISTS ivac_power_events WITH (KAFKA_TOPIC='power_events', PARTITIONS=1) AS
 SELECT

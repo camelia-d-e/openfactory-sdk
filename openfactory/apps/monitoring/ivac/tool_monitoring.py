@@ -49,8 +49,8 @@ class ToolMonitoring(OpenFactoryApp):
                                                type='Condition',
                                                tag='UNAVAILABLE'))
 
-        self.tool_states['A1ToolPlus'] = self.ivac.A1ToolPlus.value
         self.tool_states['A2ToolPlus'] = self.ivac.A2ToolPlus.value
+        self.tool_states['A3ToolPlus'] = self.ivac.A3ToolPlus.value
         self.gate_state = self.ivac.A2BlastGate.value
 
         print(f"Tool states initialized: {self.tool_states}")
@@ -124,12 +124,12 @@ class ToolMonitoring(OpenFactoryApp):
                               Expected keys: 'id' (str), 'value' (float or str).
         """
         prev_state = 'UNAVAILABLE'
-        if (msg_value['id'] == 'A1ToolPlus'):
-            prev_state = self.tool_states.get('A1ToolPlus', 'UNAVAILABLE')
-            self.tool_states['A1ToolPlus'] = msg_value['value']
-        elif (msg_value['id'] == 'A2ToolPlus'):
+        if (msg_value['id'] == 'A2ToolPlus'):
             prev_state = self.tool_states.get('A2ToolPlus', 'UNAVAILABLE')
             self.tool_states['A2ToolPlus'] = msg_value['value']
+        elif (msg_value['id'] == 'A3ToolPlus'):
+            prev_state = self.tool_states.get('A3ToolPlus', 'UNAVAILABLE')
+            self.tool_states['A3ToolPlus'] = msg_value['value']
         
         if (msg_value['id'] == 'Buzzer') and msg_value['value'] != self.ivac.__getattr__('ivac_tools_status').tag:
             self.method("BuzzerControl", self.ivac.__getattr__('ivac_tools_status').tag)
