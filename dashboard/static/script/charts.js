@@ -210,9 +210,9 @@ class Charts{
     getOptimalTimeRange(particleType) {
         const now = new Date();
         const defaultRange = {
-            min: new Date(now.getTime() - (this.TIME_WINDOW_MINUTES * 60 * 1000)),
-            max: now
-        };
+                min: new Date(now.getTime() - (this.TIME_WINDOW_MINUTES * 60 * 1000)),
+                max: now
+            };
 
         if(!this.particleData[particleType] || this.particleData[particleType].length === 0) {
             return defaultRange;
@@ -222,9 +222,9 @@ class Charts{
         const dataEnd = new Date(Math.max(...data.map(p =>p.x.getTime())));
         const timeSinceLastData = now.getTime() - dataEnd.getTime();
         const maxGapMs = 2 * 60 * 1000;
-
+        
         if(timeSinceLastData > maxGapMs) {
-             return {
+            return {
                 min: new Date(dataEnd.getTime() - (this.TIME_WINDOW_MINUTES * 60 * 1000)),
                 max: dataEnd
             };
@@ -237,6 +237,7 @@ class Charts{
         if(!this.particleData[particleType]) return;
 
         const time = new Date(timestamp);
+        console.log(value)
         const concentrationValue = this.convertToMicrogram(value);
 
         const existingIndex = this.particleData[particleType].findIndex(point => 
@@ -276,7 +277,7 @@ class Charts{
     }
 
     convertToMicrogram(percentConcentration) {
-        return (percentConcentration / 100) * 1225000;
+        return (percentConcentration / 100) * 1225000 *1000;
     }
 
     startRealTimeUpdates() {
