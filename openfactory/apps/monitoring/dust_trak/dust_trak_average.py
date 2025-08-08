@@ -1,9 +1,7 @@
 import os
 import time
-import csv
 from openfactory.apps import OpenFactoryApp
 from openfactory.kafka import KSQLDBClient
-from openfactory.assets import Asset, AssetAttribute
 
 
 class DustTrakAverage(OpenFactoryApp):
