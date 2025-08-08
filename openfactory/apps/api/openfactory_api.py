@@ -262,8 +262,8 @@ class OpenFactoryAPI(OpenFactoryApp):
             )
             df = self.ksqlClient.query(query)
             return dict(zip(df.IVAC_POWER_KEY.str[11:].tolist(), df.TOTAL_DURATION_SEC.tolist())) if 'IVAC_POWER_KEY' in df.columns and 'TOTAL_DURATION_SEC' in df.columns else {}
-        except Exception:
-            print("Error getting dataitems stats")
+        except Exception as  e:
+            print(f"Error getting dataitems stats:{e}")
             return {}
 
     async def handle_client_message(self, device_uuid: str, message: dict, websocket):
@@ -372,8 +372,6 @@ class OpenFactoryAPI(OpenFactoryApp):
                 }
             else:
                 msg_value['avg_value'] = {}
-
-
         except Exception as e:
             print(f"Error adding avg values for {msg_value['ID']}: {e}")
         
