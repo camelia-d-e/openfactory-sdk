@@ -2,10 +2,16 @@ devices:
   my-device:
     uuid: CNC123
 
-    agent:
-      port: 5001
-      device_xml: cnc.xml
-      adapter:
-        ip: virtual-cnc-adapter
-        port: 7879
+    uns:
+      workcenter: WC1
+      asset: CNC123
+
+    connector:
+      type: mtconnect
+      agent:
+        port: 5001
+        device_xml: cnc.xml
+        adapter:
+          ip: virtual-cnc-adapter
+          port: 7879
    

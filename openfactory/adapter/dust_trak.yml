@@ -2,9 +2,14 @@ devices:
   my-device:
     uuid: DUSTTRAK
 
-    agent:
-      port: 5002
-      device_xml: dust_trak.xml
-      adapter:
-        ip: 10.68.14.127
-        port: 7880
+    uns:
+      workcenter: WC1
+      asset: DUSTTRAK
+
+    connector:
+      agent:
+        port: 5002
+        device_xml: dust_trak.xml
+        adapter:
+          ip: 10.68.14.127
+          port: 7880

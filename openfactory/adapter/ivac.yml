@@ -1,23 +1,28 @@
 devices:
-  my-device:
+  ivac:
     uuid: IVAC
 
-    agent:
-      port: 5000
-      device_xml: ivac.xml
-      adapter:
-        ip: 10.68.14.100
-        port: 7878
+    uns:
+      workcenter: WC1
+      asset: IVAC
 
-    supervisor:
-      image: ghcr.io/demo-smart-factory-concordia-university/opcua-supervisor
-      adapter:
-        ip: 10.68.14.100
-        port: 4840
-        environment:
-          - NAMESPACE_URI=demofactory
-          - BROWSE_NAME=IVAC
-          - KSQLDB_URL=http://ksqldb-server:8088
+    connector:
+      type: mtconnect
+      agent:
+        port: 5000
+        device_xml: ivac.xml
+        adapter:
+          ip: 10.68.14.15
+          port: 7878
+      supervisor:
+        image: ghcr.io/openfactoryio/opcua-supervisor:v0.4.1
+        adapter:
+          ip: 10.68.14.15
+          port: 4840
+          environment:
+            - NAMESPACE_URI=demofactory
+            - BROWSE_NAME=IVAC
+            - KSQLDB_URL=http://ksqldb-server:8088
    
 
 

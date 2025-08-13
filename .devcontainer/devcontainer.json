@@ -1,14 +1,12 @@
 {
   "name": "OpenFactory-SDK Dev Container",
-  "image": "mcr.microsoft.com/devcontainers/python:3.10",
+  "image": "mcr.microsoft.com/devcontainers/python:3.13",
   "features": {
-    "docker-in-docker": {
-      "version": "latest"
-    },
-    "ghcr.io/demo-smart-factory-concordia-university/openfactory-sdk/infra:latest": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/openfactoryio/openfactory-sdk/infra": {
       "openfactory-version": "main"
     }
-  },
+    },
   "customizations": {
     "vscode": {
       "settings": {
@@ -19,5 +17,13 @@
         "ms-azuretools.vscode-docker"
       ]
     }
+    },
+    "containerEnv": {
+    "ENVIRONMENT": "local",
+    "DEPLOYMENT_PLATFORM": "docker",
+    "OPENFACTORY_UNS_SCHEMA": "/workspaces/OpenFactorySDK/openfactory/adapter/uns.yml",
+    "ROUTING_LAYER_IMAGE": "ofa/routing-layer",
+    "FASTAPI_GROUP_IMAGE": "ofa/stream-api-non-replicated",
+    "STATE_API_IMAGE": "ofa/state-api"
   }
 }

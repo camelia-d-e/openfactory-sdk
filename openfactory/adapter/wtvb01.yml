@@ -2,9 +2,14 @@ devices:
   my-device:
     uuid: WTVB01
 
-    agent:
-      port: 5003
-      device_xml: wtvb01.xml
-      adapter:
-        ip: 10.68.14.94
-        port: 7881
+    uns:
+      workcenter: WC1
+      asset: WTVB01
+
+    connector:
+      agent:
+        port: 5003
+        device_xml: wtvb01.xml
+        adapter:
+          ip: 10.68.14.94
+          port: 7881
