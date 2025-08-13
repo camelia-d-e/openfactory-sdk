@@ -29,7 +29,8 @@ ENV APPLICATION_MANUFACTURER=${APPLICATION_MANUFACTURER}
 WORKDIR /ofa
 COPY tool_monitoring.py /ofa
 COPY usage_duration.sql /ofa
-COPY usage_duration_cleanup.sql /ofa
+COPY system_health.sql /ofa
+COPY cleanup.sql /ofa
 RUN chown -R appuser:appuser /ofa
 
 USER ${UNAME}

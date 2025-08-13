@@ -73,11 +73,15 @@ class ToolMonitoring(OpenFactoryApp):
         """
         try:
             queries = []
-            with open('usage_duration_cleanup.sql', "r") as sql_file:
+            with open('cleanup.sql', "r") as sql_file:
                 sql_script = sql_file.read()
                 queries += sql_script.split(';')
 
             with open('usage_duration.sql', "r") as sql_file:
+                sql_script = sql_file.read()
+                queries += sql_script.split(';')
+            
+            with open('system_health.sql', "r") as sql_file:
                 sql_script = sql_file.read()
                 queries += sql_script.split(';')
 
