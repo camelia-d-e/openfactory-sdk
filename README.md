@@ -14,12 +14,11 @@ Avant de commencer, il faut s'assurer d’avoir les éléments suivants install�
 Ajouter les lignes suivantes dans la section features du fichier devcontainer.json **si elles ne sont pas déjà là**:
 ```
 "features": {
-  "docker-in-docker": {
-    "version": "latest"
-  },
-  "ghcr.io/demo-smart-factory-concordia-university/openfactory-sdk/infra:latest": {
-    "openfactory-version": "main"
-  }
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+
+    "ghcr.io/openfactoryio/openfactory-sdk/infra": {
+      "openfactory-version": "main"
+    }
 }
 ```
 [devcontainer.json](.devcontainer/devcontainer.json)
@@ -49,23 +48,27 @@ Fichiers requis
 devices:
   my-device:
     uuid: <UUID_DU_APPAREIL>
+    uns:
+      workcenter: <WORKCENTER>
 
-    agent:
-      port: <PORT_AGENT>
-      device_xml: <NOM_FICHIER_XML>
-      adapter:
-        ip: <IP_ADAPTATEUR>
-        port: <PORT_MTCONNECT>
+    connector:
+      type: mtconnect
+      agent:
+        port: <PORT_AGENT>
+        device_xml: <NOM_FICHIER_XML>
+        adapter:
+          ip: <IP_ADAPTATEUR>
+          port: <PORT_MTCONNECT>
 
-    supervisor:
-      image: ghcr.io/demo-smart-factory-concordia-university/opcua-supervisor
-      adapter:
-        ip: <IP_ADAPTATEUR>
-        port: <PORT_OPCUA>
-        environment:
-          - NAMESPACE_URI=<NAMESPACE_OPCUA>
-          - BROWSE_NAME=<NOM_BROWSE_OPCUA>
-          - KSQLDB_URL=http://ksqldb-server:8088
+      supervisor:
+        image: ghcr.io/openfactoryio/opcua-supervisor:${OPENFACTORY_VERSION}
+        adapter:
+          ip: <IP_ADAPTATEUR>
+          port: <PORT_OPCUA>
+          environment:
+            - NAMESPACE_URI=<NAMESPACE_OPCUA>
+            - BROWSE_NAME=<NOM_BROWSE_OPCUA>
+            - KSQLDB_URL=http://ksqldb-server:8088
 ```
 L'agent est celui qui achemine l'information de l'équipement à OpenFactory. Le supervisor sert à envoyer des commandes à l'équipement par protocole OPC-UA et n'est pas toujours nécessaire (comme dans le cas de la CNC).
 
@@ -75,10 +78,10 @@ L'agent est celui qui achemine l'information de l'équipement à OpenFactory. Le
 
 
 ### Lancer l’appareil
-`$openfactory-sdk device up <CHEMIN_VERS_FICHIER_YML>`
+`$ofa device up <CHEMIN_VERS_FICHIER_YML>`
 
 ### Arrêter l'appareil
-`$openfactory-sdk device down <CHEMIN_VERS_FICHIER_YML>`
+`$ofa device down <CHEMIN_VERS_FICHIER_YML>`
 
 ## Simuler un appareil iVAC ou CNC
 Si l’appareil physique iVAC n’est pas disponible, il est possible de simuler l’adaptateur dans
@@ -107,10 +110,10 @@ apps:
 `$docker build -t <NOM_IMAGE> <CHEMIN_VERS_DOCKERFILE>`
 
 #### Lancer les applications
-`$openfactory-sdk app up <CHEMIN_VERS_FICHIER_YML>`
+`$ofa app up <CHEMIN_VERS_FICHIER_YML>`
 
 #### Arrêter les applications
-`$openfactory-sdk app down <CHEMIN_VERS_FICHIER_YML>`
+`$ofa app down <CHEMIN_VERS_FICHIER_YML>`
 
 ### OpenFactory-API
 Cette application OpenFactory sert de couche de service pour accéder aux données en temps réel à partir des assets déployés sur OpenFactory. 

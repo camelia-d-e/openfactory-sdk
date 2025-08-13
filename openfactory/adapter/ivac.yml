@@ -14,15 +14,16 @@ devices:
         adapter:
           ip: 10.68.14.15
           port: 7878
-      supervisor:
-        image: ghcr.io/openfactoryio/opcua-supervisor:v0.4.1
-        adapter:
-          ip: 10.68.14.15
-          port: 4840
-          environment:
-            - NAMESPACE_URI=demofactory
-            - BROWSE_NAME=IVAC
-            - KSQLDB_URL=http://ksqldb-server:8088
+
+    supervisor:
+      image: ghcr.io/openfactoryio/opcua-supervisor:${OPENFACTORY_VERSION}
+      adapter:
+        ip: 10.68.14.15
+        port: 4840
+        environment:
+          - NAMESPACE_URI=demofactory
+          - BROWSE_NAME=IVAC
+          - KSQLDB_URL=http://ksqldb-server:8088
    
 
 
