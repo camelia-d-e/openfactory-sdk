@@ -48,8 +48,10 @@ Fichiers requis
 devices:
   my-device:
     uuid: <UUID_DU_APPAREIL>
+
     uns:
-      workcenter: <WORKCENTER>
+      workcenter: <NOM_WORKCENTER>
+      asset: <NOM_ASSET>
 
     connector:
       type: mtconnect
