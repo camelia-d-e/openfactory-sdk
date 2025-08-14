@@ -237,6 +237,7 @@ class OpenFactoryAPI(OpenFactoryApp):
             df = self.ksqlClient.query(query)
             for asset in df.ASSET_UUID.tolist():
                 devices.append(asset)
+                print('Allo', devices)
             return devices
         except Exception as e:
             print(f"Error getting devices: {e}")
@@ -342,10 +343,6 @@ class OpenFactoryAPI(OpenFactoryApp):
     def on_message(self, msg_key: str, msg_value: dict) -> None:
         try:
             device_uuid = msg_key
-            if(device_uuid == 'IVAC'):
-                self.add_duration_updates(msg_value)
-            elif(device_uuid == 'DUSTTRAK'):
-                self.add_avg_data(msg_value)
             self.device_queues[device_uuid].put(msg_value)
         except Exception as e:
             print(f"Error processing device event: {e}")
