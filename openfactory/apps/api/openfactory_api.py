@@ -233,10 +233,13 @@ class OpenFactoryAPI(OpenFactoryApp):
         """Get all devices from the database."""
         devices = []
         try:
-            query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE ='Device';"
+            query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE ='Device' OR TYPE LIKE '%Agent';"
             df = self.ksqlClient.query(query)
             for asset in df.ASSET_UUID.tolist():
-                devices.append(asset)
+                if('Agent' in asset):
+                    devices.append(asset[:-6])  # Remove the '-Agent' suffix
+                else:
+                    devices.append(asset)
             return devices
         except Exception as e:
             print(f"Error getting devices: {e}")
