@@ -112,10 +112,10 @@ apps:
 `$docker build -t <NOM_IMAGE> <CHEMIN_VERS_DOCKERFILE>`
 
 #### Lancer les applications
-`$ofa app up <CHEMIN_VERS_FICHIER_YML>`
+`$ofa apps up <CHEMIN_VERS_FICHIER_YML>`
 
 #### Arrêter les applications
-`$ofa app down <CHEMIN_VERS_FICHIER_YML>`
+`$ofa apps down <CHEMIN_VERS_FICHIER_YML>`
 
 ### OpenFactory-API
 Cette application OpenFactory sert de couche de service pour accéder aux données en temps réel à partir des assets déployés sur OpenFactory. 
@@ -133,6 +133,7 @@ En se connectant au endpoint `ws://ofa-api:8000/ws/devices/<device_uuid>`, l'app
 }
 ```
 *ID correspond au dataitem_id
+
 
 
 
