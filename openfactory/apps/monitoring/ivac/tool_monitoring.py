@@ -91,6 +91,7 @@ class ToolMonitoring(OpenFactoryApp):
                     continue
                 try:
                     ksqlClient.statement_query(query + ';')
+                    time.sleep(0.5)
                 except Exception as e:
                     print(f"Error in query execution:{query}, {e}")
             print('Power monitoring streams setup successfully.')
