@@ -21,7 +21,7 @@ class WTVB01Monitoring(OpenFactoryApp):
             loglevel (str): Logging level for the application. Defaults to 'INFO'.
         """
         super().__init__(app_uuid, ksqlClient, bootstrap_servers, loglevel)
-        self.kafka_processor_frequencyX = KafkaProcessor(ksqlClient, bootstrap_servers, input_topic='time_series_fx', output_topic='spectrogram_stream_fx', plot_dir='spectrogram_plotx')
+        self.kafka_processor_frequencyX = KafkaProcessor(ksqlClient, bootstrap_servers, input_topic='time_series_dx', output_topic='spectrogram_stream_dx', plot_dir='spectrogram_plotx')
         self.tool_states = {}
         object.__setattr__(self, 'ASSET_ID',  'WTVB01')
         self.setup_streams(ksqlClient)
