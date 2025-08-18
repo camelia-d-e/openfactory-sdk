@@ -30,7 +30,12 @@ ENV APPLICATION_VERSION=${VERSION}
 ENV APPLICATION_MANUFACTURER=${APPLICATION_MANUFACTURER}
 
 WORKDIR /ofa
-COPY openfactory_api.py /ofa
+COPY app.py /ofa
+COPY config.py /ofa
+COPY exceptions.py /ofa
+COPY models.py /ofa
+COPY services /ofa/services
+COPY connection /ofa/connection
 COPY topic_subscription.py /ofa
 COPY __init__.py /ofa
 RUN chown -R appuser:appuser /ofa
@@ -38,4 +43,4 @@ RUN chown -R appuser:appuser /ofa
 USER ${UNAME}
 
 EXPOSE 8000
-CMD ["python3", "-u", "/ofa/openfactory_api.py"]
+CMD ["python3", "-u", "/ofa/app.py"]

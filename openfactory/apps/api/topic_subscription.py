@@ -41,8 +41,6 @@ class TopicSubscriber:
         )
         consumer_thread.start()
         self._consumer_threads[topic] = consumer_thread
-        
-        print(f"Started subscription to topic: {topic}")
 
     def _consume_kafka_topic(self, 
                         topic: str, 
@@ -91,8 +89,6 @@ class TopicSubscriber:
             
         if topic in self._stop_flags:
             del self._stop_flags[topic]
-            
-        print(f"Stopped subscription to topic: {topic}")
 
     def stop_all_kafka_subscriptions(self) -> None:
         """Stop all topic subscriptions"""
