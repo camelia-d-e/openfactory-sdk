@@ -29,16 +29,18 @@ Une notification **« Reopen in container »** devrait apparaître. Cliquer dess
 ## Lancer OpenFactory
 Pour démarrer les containers d’infrastructure OpenFactory :
 `spinup`
+Il est essentiel de lancer OpenFactory pour pouvoir avoir accès aux commandes pour lancer un device ou une application.
 
 ## Arrêter OpenFactory
 Pour arrêter les containers d’infrastructure OpenFactory :
 `teardown`
 
-## Accéder à la base de données ksqldb
+## Accéder au cli de la base de données ksql
 Pour effectuer des queries et visualiser l'état de la base de données ksqldb (streams des assets, etc.):
 `ksql`
 
-## Ajouter et lancer un appareil MTConnect
+## Ajouter et lancer l'agent d'un appareil MTConnect
+Pour plus de détails/exemples sur le protocole MTConnect, les adapteurs et les agents, voir https://github.com/camelia-d-e/OpenFactoryAdapters. <br><br>
 Fichiers requis
 - Fichier XML : structure de l’appareil (conforme à MTConnect Standard)
 - Fichier YML : configuration OpenFactory de l’appareil
@@ -75,14 +77,14 @@ devices:
 L'agent est celui qui achemine l'information de l'équipement à OpenFactory. Le supervisor sert à envoyer des commandes à l'équipement par protocole OPC-UA et n'est pas toujours nécessaire (comme dans le cas de la CNC).
 
 #### Exemples de fichiers .yml
-- [Fichier .yml pour le iVAC](/openfactory/adapter/ivac.yml)
-- [Fichier .yml pour la CNC](/openfactory/adapter/cnc.yml)
+- [Fichier .yml pour le iVAC](/openfactory/devices/ivac.yml)
+- [Fichier .yml pour la CNC](/openfactory/devices/cnc.yml)
 
 
-### Lancer l’appareil
+### Lancer l’agent d'un appareil
 `$ofa device up <CHEMIN_VERS_FICHIER_YML>`
 
-### Arrêter l'appareil
+### Arrêter l'agent d'un appareil
 `$ofa device down <CHEMIN_VERS_FICHIER_YML>`
 
 ## Simuler un appareil iVAC ou CNC
@@ -97,7 +99,8 @@ Il faut s'assurer que l’adresse IP utilisée dans le fichier de configuration 
 Fichiers requis
 - Fichier YML : configuration des applications
 - Dockerfile : pour construire l’image
-- Code de l’application : doit hériter de la classe Asset
+- Code de l’application : doit hériter de la classe OpenFactoryApp
+
 ### Structure du fichier YML
 ```
 apps:
@@ -119,6 +122,7 @@ apps:
 
 ### OpenFactory-API
 Cette application OpenFactory sert de couche de service pour accéder aux données en temps réel à partir des assets déployés sur OpenFactory. 
+
 #### S'abonner à un device
 En se connectant au endpoint `ws://ofa-api:8000/ws/devices/<device_uuid>`, l'app permet à un client WebSocket de recevoir des updates en temps réel pour le device demandé (qui correspond à un asset OpenFactory). L'application s'occupe de créer un stream dérivé dédié à cet asset lors de la connection d'un nouveau client.
 #### Format d'un message 
