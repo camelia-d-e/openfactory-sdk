@@ -12,5 +12,5 @@ devices:
         port: 5003
         device_xml: wtvb01.xml
         adapter:
-          ip: 10.68.14.94
+          ip: 10.68.14.50
           port: 7881

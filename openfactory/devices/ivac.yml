@@ -12,13 +12,13 @@ devices:
         port: 5000
         device_xml: ivac.xml
         adapter:
-          ip: 10.68.14.15
+          ip: virtual-ivac-tool-plus-adapter
           port: 7878
 
     supervisor:
       image: ghcr.io/openfactoryio/opcua-supervisor:${OPENFACTORY_VERSION}
       adapter:
-        ip: 10.68.14.15
+        ip: virtual-ivac-tool-plus-adapter
         port: 4840
         environment:
           - NAMESPACE_URI=demofactory
