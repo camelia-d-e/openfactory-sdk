@@ -31,6 +31,7 @@ ENV APPLICATION_MANUFACTURER=${APPLICATION_MANUFACTURER}
 WORKDIR /ofa
 COPY wtvb01_spectrogram.py /ofa
 COPY kafka_processor.py /ofa
+COPY signal_processor.py /ofa
 COPY spectrogram.sql /ofa
 COPY spectrogram_cleanup.sql /ofa
 RUN chown -R appuser:appuser /ofa
