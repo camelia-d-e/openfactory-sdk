@@ -125,7 +125,7 @@ Cette application OpenFactory sert de couche de service pour accéder aux donné
 
 #### S'abonner à un device
 En se connectant au endpoint `ws://ofa-api:8000/ws/devices/<device_uuid>`, l'app permet à un client WebSocket de recevoir des updates en temps réel pour le device demandé (qui correspond à un asset OpenFactory). L'application s'occupe de créer un stream dérivé dédié à cet asset lors de la connection d'un nouveau client.
-#### Format d'un message 
+##### Format d'un message
 ```
 {
   'asset_uuid': 'IVAC',
@@ -137,6 +137,29 @@ En se connectant au endpoint `ws://ofa-api:8000/ws/devices/<device_uuid>`, l'app
 }
 ```
 *ID correspond au dataitem_id
+
+#### Recevoir une liste des devices disponibles 
+Pour demander la liste des devices disponibles actuellement, il faut accéder au endpoint `ws://ofa-api:8000/ws/devices`. Ce endpoint sert à l'initialisation du dashboard.
+##### Format du message 
+```
+{
+  'event': 'devices_list',
+  'timestamp': 1755609624.7116494,
+  'devices': [{
+                'device_uuid': 'IVAC',
+                'dataitems': {
+                                'A2BlastGate': 'CLOSED',
+                                'A2ToolPlus': 'OFF',
+                                'A3BlastGate': 'CLOSED',
+                                'A3ToolPlus': 'OFF',
+                                'avail': 'AVAILABLE',
+                                'ivac_tools_status': 'No more than one connected tool is powered ON'
+                              },
+                'durations': {}
+              }]
+}
+```
+** Ici, le champ durations n'est pas toujours présent; il s'agit des données sur le calcul de durée de puissance des dataitems de ce device. 
 
 
 

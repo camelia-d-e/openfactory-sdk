@@ -327,8 +327,7 @@ class WebsocketsManager:
                     device_info = {
                         "device_uuid": device_uuid,
                         "dataitems": self.device_service.get_device_dataitems(device_uuid),
-                        "durations": self.device_service.get_device_stats(device_uuid),
-                        "connections": self.connection_manager.get_connection_count(device_uuid)
+                        "durations": self.device_service.get_device_stats(device_uuid)
                     }
                     device_list.append(device_info)
                 except Exception as e:
