@@ -7,6 +7,7 @@ devices:
       asset: DUSTTRAK
 
     connector:
+      type: mtconnect
       agent:
         port: 5002
         device_xml: dust_trak.xml
