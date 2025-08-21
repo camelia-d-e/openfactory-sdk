@@ -159,9 +159,11 @@ Pour demander la liste des devices disponibles actuellement, il faut accéder au
               }]
 }
 ```
-** Ici, le champ durations n'est pas toujours présent; il s'agit des données sur le calcul de durée de puissance des dataitems de ce device. 
+** Ici, le champ "durations" n'est pas toujours présent; il s'agit des données sur le calcul de durée de puissance des dataitems de ce device. 
 
-
+### Applications de « monitoring »
+Ce type d'applications sert principalement à créer des streams qui font la vérification de la validité des états de certains outils (Ex.: voir les streams [system_health.sql](/openfactory/apps/monitoring/ivac/system_health.sql)) ou qui font des calculs sur les données reçues (Ex.: voir les streams [usage_duration.sql](openfactory/apps/monitoring/ivac/usage_duration.sql) et [moving_average.sql](openfactory/apps/monitoring/dust_trak/moving_average.sql)). <br>
+Pour des calculs plus complexes, il est aussi possible d'implémenter un consumer et un producer Kafka combinés avec des streams pour effectuer le calcul complexe dans l'app Python puis renvoyer le résultat dans un nouveau stream (Ex.: Voir [application de calcul de spectrogramme](openfactory/apps/monitoring/wtvb01/wtvb01_spectrogram.py)).
 
 
 
